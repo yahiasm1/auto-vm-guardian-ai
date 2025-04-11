@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/Layout/DashboardLayout';
 import { VmCard, VMStatus } from '@/components/Dashboard/VmCard';
@@ -180,7 +179,7 @@ const StudentVms: React.FC = () => {
                     ip={vm.ip}
                     isStudent={true}
                     onStatusChange={handleStatusChange}
-                    onConnect={() => openConsole(vm.id)}
+                    onConnect={openConsole}
                   />
                 ))}
               </div>

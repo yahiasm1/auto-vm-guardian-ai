@@ -20,7 +20,7 @@ interface VmCardProps {
   ip?: string; // Make ip optional so it can be undefined for VMs in 'creating' status
   isStudent?: boolean;
   onStatusChange?: () => void; // Callback for parent components to refresh data
-  onConnect?: () => void; // Callback for connecting to the VM
+  onConnect?: (id: string) => void; // Updated to pass the VM ID
 }
 
 export const VmCard: React.FC<VmCardProps> = ({
@@ -77,18 +77,17 @@ export const VmCard: React.FC<VmCardProps> = ({
           break;
         case 'Connect':
           if (onConnect) {
-            onConnect();
+            onConnect(id); // Pass the VM ID to the parent component
           } else {
-            toast('Connecting to VM: ' + name);
+            toast.info(`Connecting to VM: ${name}`);
             console.log(`Connecting to VM: ${id}`);
-            // In a real app, this would open a terminal connection or VNC viewer
           }
           break;
         default:
           break;
       }
       
-      if (onStatusChange) {
+      if (onStatusChange && action !== 'Connect') {
         onStatusChange();
       }
     } catch (error) {

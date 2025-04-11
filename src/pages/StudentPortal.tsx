@@ -6,6 +6,8 @@ import { ResourceUsageChart } from '@/components/Dashboard/ResourceUsageChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Server, BookOpen, FileText, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Resource usage data
 const resourceData = [
@@ -85,6 +87,8 @@ const assignments: Assignment[] = [
 
 const StudentPortal: React.FC = () => {
   const [studentVMs, setStudentVMs] = useState<StudentVM[]>(initialStudentVMs);
+  const [selectedVM, setSelectedVM] = useState<string | null>(null);
+  const [showConsole, setShowConsole] = useState<boolean>(false);
   
   const handleMaterialClick = (material: CourseMaterial) => {
     toast(`Opening material: ${material.title}`);
@@ -94,6 +98,11 @@ const StudentPortal: React.FC = () => {
   const handleAssignmentClick = (assignment: Assignment) => {
     toast(`Opening assignment: ${assignment.title}`);
     // In a real app, this would open the assignment in a new page or modal
+  };
+
+  const openConsole = (vmId: string) => {
+    setSelectedVM(vmId);
+    setShowConsole(true);
   };
 
   return (
@@ -112,7 +121,12 @@ const StudentPortal: React.FC = () => {
           <h2 className="text-xl font-semibold mb-4">My Virtual Machines</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {studentVMs.map((vm) => (
-              <VmCard key={vm.id} {...vm} isStudent={true} />
+              <VmCard 
+                key={vm.id} 
+                {...vm} 
+                isStudent={true} 
+                onConnect={openConsole}
+              />
             ))}
           </div>
         </div>
@@ -237,6 +251,84 @@ const StudentPortal: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Web Console Modal */}
+      <Sheet open={showConsole} onOpenChange={setShowConsole}>
+        <SheetContent side="right" className="w-[90%] sm:w-[540px] md:w-[720px] p-0">
+          <SheetHeader className="p-6 border-b">
+            <SheetTitle>
+              {selectedVM && studentVMs.find(vm => vm.id === selectedVM)?.name} - Web Console
+            </SheetTitle>
+          </SheetHeader>
+          
+          <Tabs defaultValue="console" className="p-6">
+            <TabsList className="mb-4">
+              <TabsTrigger value="console">Console</TabsTrigger>
+              <TabsTrigger value="info">VM Information</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="console" className="p-0">
+              <div className="bg-black text-green-400 font-mono p-4 h-[500px] overflow-auto rounded border border-gray-700">
+                <div className="mb-2">[root@vm ~]# Connection established to virtual machine</div>
+                <div className="mb-2">[root@vm ~]# Welcome to Linux VM Console</div>
+                <div className="mb-2">[root@vm ~]# Type 'help' for a list of commands</div>
+                <div className="mb-2">[root@vm ~]# </div>
+                <div className="flex items-center">
+                  <span className="mr-2">[root@vm ~]#</span>
+                  <div className="animate-pulse">_</div>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                This is a simulated console. In production, this would be a real terminal connection.
+              </p>
+            </TabsContent>
+            
+            <TabsContent value="info" className="p-0">
+              {selectedVM && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-medium text-sm text-slate-500">VM Name</h3>
+                    <p>{studentVMs.find(vm => vm.id === selectedVM)?.name}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-medium text-sm text-slate-500">Operating System</h3>
+                    <p>{studentVMs.find(vm => vm.id === selectedVM)?.os}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-medium text-sm text-slate-500">IP Address</h3>
+                    <p>{studentVMs.find(vm => vm.id === selectedVM)?.ip || 'Not assigned'}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-medium text-sm text-slate-500">VM Status</h3>
+                    <p>{studentVMs.find(vm => vm.id === selectedVM)?.status}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-medium text-sm text-slate-500">Connection Methods</h3>
+                    <div className="mt-2 space-y-2">
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded border">
+                        <h4 className="font-medium">SSH Command</h4>
+                        <code className="block bg-slate-100 dark:bg-slate-700 p-2 rounded mt-1 text-xs">
+                          ssh student@{studentVMs.find(vm => vm.id === selectedVM)?.ip || 'vm-ip-address'}
+                        </code>
+                      </div>
+                      
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded border">
+                        <h4 className="font-medium">RDP Information (for Windows VMs)</h4>
+                        <p className="text-sm mt-1">Server: {studentVMs.find(vm => vm.id === selectedVM)?.ip || 'vm-ip-address'}</p>
+                        <p className="text-sm">Username: student</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </SheetContent>
+      </Sheet>
     </DashboardLayout>
   );
 };
