@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/Layout/DashboardLayout';
 import { VmCard, VMStatus } from '@/components/Dashboard/VmCard';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, Server, Activity, BarChart3 } from 'lucide-react';
+import { Search, Filter, Server, Activity, BarChart3, RefreshCw } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { vmService } from '@/services/vmService';
 import { resourceService } from '@/services/resourceService';
@@ -12,7 +13,7 @@ import { toast } from 'sonner';
 import { VirtualMachine } from '@/services/vmService';
 import { ResourceUsageChart } from '@/components/Dashboard/ResourceUsageChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -56,7 +57,8 @@ const StudentVms: React.FC = () => {
   } = useQuery({
     queryKey: ['studentVirtualMachines', user?.id],
     queryFn: () => vmService.getVMsByUserId(user?.id || ''),
-    enabled: !!user?.id
+    enabled: !!user?.id,
+    retry: 1, // Only retry once to avoid excessive error messages
   });
   
   const {
@@ -84,8 +86,8 @@ const StudentVms: React.FC = () => {
   }));
 
   const filteredVMs = typedVMs.filter((vm: StudentVM) => {
-    const matchesSearch = vm.name.toLowerCase().includes(search.toLowerCase()) ||
-                        vm.os.toLowerCase().includes(search.toLowerCase()) ||
+    const matchesSearch = vm.name?.toLowerCase().includes(search.toLowerCase()) ||
+                        vm.os?.toLowerCase().includes(search.toLowerCase()) ||
                         vm.course?.toLowerCase().includes(search.toLowerCase()) ||
                         vm.ip?.includes(search);
     
@@ -105,7 +107,6 @@ const StudentVms: React.FC = () => {
   };
 
   // Sample resource usage data for demo purposes
-  // In a real implementation, this would come from the API
   const sampleResourceData = [
     { name: '00:00', cpu: 10, ram: 25, storage: 40 },
     { name: '03:00', cpu: 15, ram: 25, storage: 40 },
@@ -122,11 +123,22 @@ const StudentVms: React.FC = () => {
     <DashboardLayout title="My Virtual Machines" userType="student">
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h2 className="text-2xl font-bold">My Virtual Machines</h2>
-          <p className="text-slate-600 dark:text-slate-300 mt-1">
-            Manage and access your course virtual machines.
-          </p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold">My Virtual Machines</h2>
+            <p className="text-slate-600 dark:text-slate-300 mt-1">
+              Manage and access your course virtual machines.
+            </p>
+          </div>
+          
+          <Button 
+            variant="outline" 
+            onClick={() => refetch()} 
+            disabled={isLoading}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /> Refresh
+          </Button>
         </div>
 
         {/* Filters */}
@@ -151,6 +163,7 @@ const StudentVms: React.FC = () => {
                 <SelectItem value="running">Running</SelectItem>
                 <SelectItem value="stopped">Stopped</SelectItem>
                 <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="creating">Creating</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -191,6 +204,13 @@ const StudentVms: React.FC = () => {
                     <p className="text-muted-foreground">
                       Error loading your virtual machines. Please try again.
                     </p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4" 
+                      onClick={() => refetch()}
+                    >
+                      Retry
+                    </Button>
                   </div>
                 ) : (
                   <p className="text-muted-foreground">
