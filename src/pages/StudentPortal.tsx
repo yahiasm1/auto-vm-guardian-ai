@@ -1,13 +1,18 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/Layout/DashboardLayout';
 import { VmCard, VMStatus } from '@/components/Dashboard/VmCard';
 import { ResourceUsageChart } from '@/components/Dashboard/ResourceUsageChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Server, BookOpen, FileText, Clock } from 'lucide-react';
+import { Server, BookOpen, FileText, Clock, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { vmService } from '@/services/vmService';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 // Resource usage data
 const resourceData = [
@@ -34,29 +39,6 @@ interface StudentVM {
   ip?: string;
 }
 
-const initialStudentVMs: StudentVM[] = [
-  {
-    id: 'svm1',
-    name: 'Web-Dev-Environment',
-    os: 'Ubuntu 20.04 LTS',
-    status: 'running',
-    cpu: 2,
-    ram: 4,
-    storage: 50,
-    ip: '192.168.1.120',
-  },
-  {
-    id: 'svm2',
-    name: 'Database-Class',
-    os: 'CentOS 8',
-    status: 'stopped',
-    cpu: 4,
-    ram: 8,
-    storage: 100,
-    ip: '192.168.1.121',
-  },
-];
-
 // Course materials data
 interface CourseMaterial {
   id: string;
@@ -64,12 +46,6 @@ interface CourseMaterial {
   description: string;
   date: string;
 }
-
-const courseMaterials: CourseMaterial[] = [
-  { id: 'cm1', title: 'Linux Fundamentals', description: 'Introduction to Linux commands and file system', date: '2025-03-15' },
-  { id: 'cm2', title: 'Database Design', description: 'Relational database concepts and SQL', date: '2025-03-22' },
-  { id: 'cm3', title: 'Web Development', description: 'HTML, CSS, and JavaScript basics', date: '2025-04-02' },
-];
 
 // Assignment data
 interface Assignment {
@@ -80,15 +56,102 @@ interface Assignment {
   status: 'pending' | 'submitted' | 'graded';
 }
 
-const assignments: Assignment[] = [
-  { id: 'asg1', title: 'Linux Server Setup', description: 'Configure a web server with Apache', dueDate: '2025-04-15', status: 'pending' },
-  { id: 'asg2', title: 'Database Creation', description: 'Design and implement a database schema', dueDate: '2025-04-25', status: 'pending' },
-];
-
 const StudentPortal: React.FC = () => {
-  const [studentVMs, setStudentVMs] = useState<StudentVM[]>(initialStudentVMs);
+  const { user } = useAuth();
   const [selectedVM, setSelectedVM] = useState<string | null>(null);
   const [showConsole, setShowConsole] = useState<boolean>(false);
+  
+  // Fetch VMs for the logged-in user
+  const {
+    data: studentVMs = [],
+    isLoading: isLoadingVMs,
+    error: vmError,
+    refetch: refetchVMs
+  } = useQuery({
+    queryKey: ['studentVirtualMachines', user?.id],
+    queryFn: () => vmService.getVMsByUserId(user?.id || ''),
+    enabled: !!user?.id,
+  });
+  
+  // Fetch course materials
+  const {
+    data: courseMaterials = [],
+    isLoading: isLoadingMaterials,
+    error: materialsError,
+    refetch: refetchMaterials
+  } = useQuery({
+    queryKey: ['courseMaterials'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('vm-management', {
+          body: { action: 'get_course_materials' },
+          method: 'POST'
+        });
+        
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching course materials:', error);
+        toast.error('Failed to load course materials');
+        throw error;
+      }
+    }
+  });
+  
+  // Fetch assignments
+  const {
+    data: assignments = [],
+    isLoading: isLoadingAssignments,
+    error: assignmentsError,
+    refetch: refetchAssignments
+  } = useQuery({
+    queryKey: ['assignments'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('vm-management', {
+          body: { action: 'get_assignments' },
+          method: 'POST'
+        });
+        
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching assignments:', error);
+        toast.error('Failed to load assignments');
+        throw error;
+      }
+    }
+  });
+  
+  // Seed initial data if nothing exists yet
+  useEffect(() => {
+    if (user?.id && studentVMs.length === 0 && !isLoadingVMs && !vmError) {
+      const seedInitialData = async () => {
+        try {
+          const { error } = await supabase.functions.invoke('vm-management', {
+            body: { 
+              action: 'seed_initial_data',
+              userId: user.id
+            },
+            method: 'POST'
+          });
+          
+          if (error) throw error;
+          
+          // Refetch all data
+          refetchVMs();
+          refetchMaterials();
+          refetchAssignments();
+          
+          toast.success('Initial data loaded successfully');
+        } catch (error) {
+          console.error('Error seeding initial data:', error);
+        }
+      };
+      
+      seedInitialData();
+    }
+  }, [user?.id, studentVMs.length, isLoadingVMs, vmError, refetchVMs, refetchMaterials, refetchAssignments]);
   
   const handleMaterialClick = (material: CourseMaterial) => {
     toast(`Opening material: ${material.title}`);
@@ -104,31 +167,60 @@ const StudentPortal: React.FC = () => {
     setSelectedVM(vmId);
     setShowConsole(true);
   };
+  
+  // Refresh all data
+  const refreshAllData = () => {
+    refetchVMs();
+    refetchMaterials();
+    refetchAssignments();
+    toast.success('Data refreshed');
+  };
 
   return (
     <DashboardLayout title="Student Portal" userType="student">
       <div className="space-y-6">
         {/* Welcome Message */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-          <h2 className="text-2xl font-bold mb-2">Welcome, Student</h2>
-          <p className="text-slate-600 dark:text-slate-300">
-            Manage your virtual machines and access course materials.
-          </p>
+        <div className="flex justify-between items-center">
+          <div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <h2 className="text-2xl font-bold mb-2">Welcome, Student</h2>
+            <p className="text-slate-600 dark:text-slate-300">
+              Manage your virtual machines and access course materials.
+            </p>
+          </div>
+          <Button 
+            variant="outline"
+            onClick={refreshAllData}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw size={16} className={isLoadingVMs || isLoadingMaterials || isLoadingAssignments ? "animate-spin" : ""} />
+            Refresh
+          </Button>
         </div>
 
         {/* My Virtual Machines */}
         <div>
           <h2 className="text-xl font-semibold mb-4">My Virtual Machines</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {studentVMs.map((vm) => (
-              <VmCard 
-                key={vm.id} 
-                {...vm} 
-                isStudent={true} 
-                onConnect={openConsole}
-              />
-            ))}
-          </div>
+          {isLoadingVMs ? (
+            <div className="flex flex-col items-center justify-center p-8">
+              <Server size={48} className="text-muted-foreground animate-pulse mb-4" />
+              <p className="text-muted-foreground">Loading your virtual machines...</p>
+            </div>
+          ) : studentVMs.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {studentVMs.map((vm) => (
+                <VmCard 
+                  key={vm.id} 
+                  {...vm} 
+                  isStudent={true} 
+                  onConnect={openConsole}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
+              <p>No virtual machines found. They will appear here once assigned to your account.</p>
+            </div>
+          )}
         </div>
 
         {/* Resource Usage */}
@@ -200,21 +292,29 @@ const StudentPortal: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3">
-                {courseMaterials.map((material) => (
-                  <li 
-                    key={material.id} 
-                    className="p-3 border rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
-                    onClick={() => handleMaterialClick(material)}
-                  >
-                    <h3 className="font-medium">{material.title}</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{material.description}</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 flex items-center">
-                      <Clock size={12} className="mr-1" /> {material.date}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+              {isLoadingMaterials ? (
+                <div className="flex justify-center py-4">
+                  <p className="text-muted-foreground">Loading course materials...</p>
+                </div>
+              ) : courseMaterials.length > 0 ? (
+                <ul className="space-y-3">
+                  {courseMaterials.map((material: CourseMaterial) => (
+                    <li 
+                      key={material.id} 
+                      className="p-3 border rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
+                      onClick={() => handleMaterialClick(material)}
+                    >
+                      <h3 className="font-medium">{material.title}</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{material.description}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 flex items-center">
+                        <Clock size={12} className="mr-1" /> {material.date}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-center text-muted-foreground py-4">No course materials available.</p>
+              )}
             </CardContent>
           </Card>
 
@@ -227,26 +327,34 @@ const StudentPortal: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ul className="space-y-3">
-                {assignments.map((assignment) => (
-                  <li 
-                    key={assignment.id} 
-                    className="p-3 border rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
-                    onClick={() => handleAssignmentClick(assignment)}
-                  >
-                    <div className="flex justify-between">
-                      <h3 className="font-medium">{assignment.title}</h3>
-                      <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
-                        {assignment.status}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{assignment.description}</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 flex items-center">
-                      <Clock size={12} className="mr-1" /> Due: {assignment.dueDate}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+              {isLoadingAssignments ? (
+                <div className="flex justify-center py-4">
+                  <p className="text-muted-foreground">Loading assignments...</p>
+                </div>
+              ) : assignments.length > 0 ? (
+                <ul className="space-y-3">
+                  {assignments.map((assignment: Assignment) => (
+                    <li 
+                      key={assignment.id} 
+                      className="p-3 border rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
+                      onClick={() => handleAssignmentClick(assignment)}
+                    >
+                      <div className="flex justify-between">
+                        <h3 className="font-medium">{assignment.title}</h3>
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+                          {assignment.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">{assignment.description}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 flex items-center">
+                        <Clock size={12} className="mr-1" /> Due: {assignment.dueDate}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-center text-muted-foreground py-4">No assignments available.</p>
+              )}
             </CardContent>
           </Card>
         </div>
