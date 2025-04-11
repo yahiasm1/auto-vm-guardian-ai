@@ -52,8 +52,11 @@ const StudentVms: React.FC = () => {
     }
   }, [error]);
 
-  // Ensure we're properly casting the VM data from API to our expected type
-  const typedVMs = studentVMs as StudentVM[];
+  // Cast the VM data from API to our expected type with proper status typing
+  const typedVMs: StudentVM[] = studentVMs.map((vm: VirtualMachine) => ({
+    ...vm,
+    status: vm.status as VMStatus
+  }));
 
   const filteredVMs = typedVMs.filter((vm: StudentVM) => {
     const matchesSearch = vm.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -125,7 +128,7 @@ const StudentVms: React.FC = () => {
                     id={vm.id}
                     name={vm.name}
                     os={vm.os}
-                    status={vm.status as VMStatus}
+                    status={vm.status}
                     cpu={vm.cpu}
                     ram={vm.ram}
                     storage={vm.storage}
