@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { Session, User } from '@supabase/supabase-js';
+import { Session, User, Provider } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -11,7 +11,19 @@ interface AuthContextProps {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   signUp: (email: string, password: string, name: string, role: string, department: string) => Promise<void>;
+  signInWithOAuth: (provider: Provider) => Promise<void>;
   supabaseConfigured: boolean;
+  notifications: Notification[];
+  markNotificationAsRead: (id: string) => Promise<void>;
+}
+
+interface Notification {
+  id: string;
+  user_id: string;
+  message: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  read: boolean;
+  created_at: string;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -21,6 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [supabaseConfigured, setSupabaseConfigured] = useState<boolean>(isSupabaseConfigured());
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,6 +52,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // If user is logged in, fetch their notifications
+      if (session?.user) {
+        fetchUserNotifications(session.user.id);
+      }
     }).catch(error => {
       console.error('Error getting session:', error);
       setLoading(false);
@@ -49,10 +67,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // If user is logged in, fetch their notifications
+      if (session?.user) {
+        fetchUserNotifications(session.user.id);
+      } else {
+        setNotifications([]);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, [supabaseConfigured]);
+  
+  const fetchUserNotifications = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+        
+      if (error) {
+        throw error;
+      }
+      
+      setNotifications(data || []);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+  
+  const markNotificationAsRead = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Update the local state
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === id ? { ...notif, read: true } : notif
+        )
+      );
+      
+    } catch (error: any) {
+      toast('Failed to mark notification as read', {
+        description: error.message,
+        style: { backgroundColor: 'rgb(239 68 68)' }
+      });
+    }
+  };
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -156,6 +226,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
     }
   };
+  
+  const signInWithOAuth = async (provider: Provider) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: window.location.origin + '/auth/callback'
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // The user will be redirected to the OAuth provider
+      // No need for navigation logic here as the auth state listener will handle it
+    } catch (error: any) {
+      toast('OAuth sign in failed', {
+        description: error.message,
+        style: { backgroundColor: 'rgb(239 68 68)' }
+      });
+    }
+  };
 
   return (
     <AuthContext.Provider value={{ 
@@ -165,7 +258,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signIn, 
       signOut, 
       signUp,
-      supabaseConfigured 
+      signInWithOAuth,
+      supabaseConfigured,
+      notifications,
+      markNotificationAsRead
     }}>
       {children}
     </AuthContext.Provider>

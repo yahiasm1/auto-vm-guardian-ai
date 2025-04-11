@@ -1,9 +1,13 @@
 
 import React from 'react';
 import { Sidebar } from '../Navigation/Sidebar';
-import { User, BellRing, Menu } from 'lucide-react';
+import { User, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { NotificationsPopover } from '../Notifications/NotificationsPopover';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -17,6 +21,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   userType 
 }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const { user, signOut } = useAuth();
   
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
@@ -48,12 +53,37 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             </div>
 
             <div className="flex items-center space-x-3">
-              <Button variant="ghost" size="icon">
-                <BellRing size={20} />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <User size={20} />
-              </Button>
+              <NotificationsPopover />
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <User size={20} />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56" align="end">
+                  <div className="space-y-1">
+                    <p className="font-medium">{user?.email}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {userType === 'admin' ? 'Administrator' : 'Student User'}
+                    </p>
+                  </div>
+                  <div className="flex flex-col pt-4 gap-2">
+                    <Link 
+                      to={`/${userType}/profile`}
+                      className="text-sm px-2 py-1.5 hover:bg-muted rounded-md"
+                    >
+                      Profile Settings
+                    </Link>
+                    <button
+                      onClick={() => signOut()}
+                      className="text-sm px-2 py-1.5 hover:bg-muted rounded-md text-left text-red-500"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </header>

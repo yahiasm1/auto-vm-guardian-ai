@@ -23,6 +23,8 @@ import NotFound from "./pages/NotFound";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
+import Profile from "./pages/user/Profile";
+import AuthCallback from "./pages/auth/AuthCallback";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +57,7 @@ const AppRoutes = () => {
       <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
       
       {/* Admin Routes */}
       <Route 
@@ -121,6 +124,14 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/admin/profile" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Profile />
+          </ProtectedRoute>
+        } 
+      />
       
       {/* Student Routes */}
       <Route 
@@ -168,6 +179,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={['student']}>
             <Help />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/student/profile" 
+        element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <Profile />
           </ProtectedRoute>
         } 
       />
