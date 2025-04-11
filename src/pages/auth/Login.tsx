@@ -1,19 +1,47 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Link, Navigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Eye, EyeOff, AlertTriangle, Database } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { verifyDatabaseTables } from '@/utils/supabaseDbVerifier';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { signIn, user, loading, supabaseConfigured } = useAuth();
+  const [databaseStatus, setDatabaseStatus] = useState<{
+    checked: boolean;
+    success: boolean;
+    message: string;
+    missingTables: string[];
+  }>({
+    checked: false,
+    success: true,
+    message: '',
+    missingTables: []
+  });
+
+  useEffect(() => {
+    const checkDatabase = async () => {
+      if (supabaseConfigured) {
+        const status = await verifyDatabaseTables();
+        setDatabaseStatus({
+          checked: true,
+          success: status.success,
+          message: status.message,
+          missingTables: status.missingTables
+        });
+      }
+    };
+
+    checkDatabase();
+  }, [supabaseConfigured]);
 
   // If already logged in, redirect to appropriate dashboard
   if (!loading && user) {
@@ -43,6 +71,19 @@ const Login: React.FC = () => {
               <AlertDescription>
                 Supabase configuration is missing. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY 
                 to your environment variables.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
+        {databaseStatus.checked && !databaseStatus.success && (
+          <div className="px-6">
+            <Alert variant="destructive" className="mb-4">
+              <Database className="h-4 w-4" />
+              <AlertTitle>Database Tables Missing</AlertTitle>
+              <AlertDescription>
+                The following tables are missing from the database: {databaseStatus.missingTables.join(', ')}.
+                Please run the schema.sql script in the Supabase SQL editor.
               </AlertDescription>
             </Alert>
           </div>
