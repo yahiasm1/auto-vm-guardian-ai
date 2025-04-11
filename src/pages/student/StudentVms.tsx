@@ -20,6 +20,9 @@ interface StudentVM {
   storage: number;
   ip?: string;
   course?: string;
+  user_id: string;
+  created_at?: string;
+  last_updated?: string;
 }
 
 const StudentVms: React.FC = () => {
@@ -114,8 +117,15 @@ const StudentVms: React.FC = () => {
                 {filteredVMs.map((vm: StudentVM) => (
                   <VmCard 
                     key={vm.id} 
-                    {...vm} 
-                    isStudent={true} 
+                    id={vm.id}
+                    name={vm.name}
+                    os={vm.os}
+                    status={vm.status as VMStatus}
+                    cpu={vm.cpu}
+                    ram={vm.ram}
+                    storage={vm.storage}
+                    ip={vm.ip}
+                    isStudent={true}
                     onStatusChange={handleStatusChange}
                   />
                 ))}

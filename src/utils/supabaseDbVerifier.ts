@@ -15,22 +15,23 @@ export const verifyDatabaseTables = async (): Promise<{
   const missingTables: string[] = [];
   
   try {
-    // Query Supabase system tables to check for our tables
-    const { data, error } = await supabase
-      .from('pg_catalog.pg_tables')
-      .select('tablename')
-      .eq('schemaname', 'public')
-      .in('tablename', requiredTables);
-      
-    if (error) throw error;
-    
-    // Check which tables exist
-    if (data) {
-      const tableNames = data.map(t => t.tablename);
-      existingTables.push(...tableNames);
-      
-      // Find missing tables
-      missingTables.push(...requiredTables.filter(t => !tableNames.includes(t)));
+    // Check each table individually instead of querying pg_catalog
+    for (const tableName of requiredTables) {
+      try {
+        // Try to get the count of rows from each table
+        // This will fail if the table doesn't exist
+        const { count, error } = await supabase
+          .from(tableName)
+          .select('*', { count: 'exact', head: true });
+          
+        if (!error) {
+          existingTables.push(tableName);
+        } else {
+          missingTables.push(tableName);
+        }
+      } catch (tableError) {
+        missingTables.push(tableName);
+      }
     }
     
     return {
