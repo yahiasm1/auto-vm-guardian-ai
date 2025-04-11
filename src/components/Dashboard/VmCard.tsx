@@ -135,7 +135,7 @@ export const VmCard: React.FC<VmCardProps> = ({
                     size="sm" 
                     variant="outline" 
                     onClick={() => handleAction('Start')}
-                    disabled={isLoading || status === 'creating'}
+                    disabled={isLoading}
                   >
                     <Play size={16} className="mr-1" /> Start
                   </Button>
@@ -190,14 +190,14 @@ export const VmCard: React.FC<VmCardProps> = ({
               </>
             )}
 
-            {!isStudent && status !== 'creating' && (
+            {!isStudent && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
                     size="sm" 
                     variant="destructive" 
                     onClick={() => handleAction('Delete')}
-                    disabled={isLoading}
+                    disabled={isLoading || status === 'creating'}
                   >
                     <Trash2 size={16} className="mr-1" /> Delete
                   </Button>
