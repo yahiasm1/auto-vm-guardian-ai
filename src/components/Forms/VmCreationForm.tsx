@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,7 +21,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { vmService } from '@/services/vmService';
 
 const vmFormSchema = z.object({
   name: z.string().min(3, { message: 'VM name must be at least 3 characters long' }),
@@ -31,6 +39,7 @@ const vmFormSchema = z.object({
   storageGB: z.number().min(10).max(1000),
   networkType: z.enum(['bridged', 'nat']),
   assignToUser: z.string().optional(),
+  courseId: z.string().optional(),
 });
 
 type VmFormValues = z.infer<typeof vmFormSchema>;
@@ -47,17 +56,83 @@ interface VmCreationFormProps {
   isCreating?: boolean;
 }
 
+// Define the template type
+type Template = {
+  id: string;
+  name: string;
+  os: string;
+  description: string | null;
+  cpu: number;
+  ram: number;
+  storage: number;
+};
+
 export const VmCreationForm: React.FC<VmCreationFormProps> = ({
   onSubmit,
   isCreating = false,
 }) => {
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+
   const form = useForm<VmFormValues>({
     resolver: zodResolver(vmFormSchema),
     defaultValues,
   });
 
-  const handleSubmit = (values: VmFormValues) => {
-    onSubmit(values);
+  // Fetch VM templates when component mounts
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        const templatesData = await vmService.getVMTemplates();
+        setTemplates(templatesData || []);
+      } catch (error) {
+        console.error('Error loading templates:', error);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    fetchTemplates();
+  }, []);
+
+  // Apply template when selected
+  const handleTemplateChange = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    
+    if (!templateId) return;
+    
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      form.setValue('os', template.os);
+      form.setValue('cpuCores', template.cpu);
+      form.setValue('ramGB', template.ram);
+      form.setValue('storageGB', template.storage);
+    }
+  };
+
+  const handleSubmit = async (values: VmFormValues) => {
+    try {
+      // Map form values to VM structure
+      const vmData = {
+        name: values.name,
+        os: values.os,
+        cpu: values.cpuCores,
+        ram: values.ramGB,
+        storage: values.storageGB,
+        course: values.courseId || null,
+        user_id: values.assignToUser || null,
+      };
+      
+      // Call the vmService to create VM
+      await vmService.createVM(vmData);
+      
+      // Call the onSubmit callback to close dialog or perform UI updates
+      onSubmit(values);
+    } catch (error) {
+      console.error('Error in form submission:', error);
+    }
   };
 
   return (
@@ -71,6 +146,28 @@ export const VmCreationForm: React.FC<VmCreationFormProps> = ({
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {/* Template Selection */}
+            <div className="mb-6">
+              <FormLabel className="mb-2 block">Use Template (Optional)</FormLabel>
+              <Select
+                value={selectedTemplate}
+                onValueChange={handleTemplateChange}
+                disabled={loadingTemplates || templates.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingTemplates ? 'Loading templates...' : 'Select a template'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {templates.map(template => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name} ({template.description})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -95,6 +192,7 @@ export const VmCreationForm: React.FC<VmCreationFormProps> = ({
                     <Select 
                       onValueChange={field.onChange} 
                       defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -126,7 +224,7 @@ export const VmCreationForm: React.FC<VmCreationFormProps> = ({
                         min={1}
                         max={16}
                         step={1}
-                        defaultValue={[field.value]}
+                        value={[field.value]}
                         onValueChange={(value) => field.onChange(value[0])}
                         className="py-4"
                       />
@@ -147,7 +245,7 @@ export const VmCreationForm: React.FC<VmCreationFormProps> = ({
                         min={1}
                         max={64}
                         step={1}
-                        defaultValue={[field.value]}
+                        value={[field.value]}
                         onValueChange={(value) => field.onChange(value[0])}
                         className="py-4"
                       />
@@ -168,7 +266,7 @@ export const VmCreationForm: React.FC<VmCreationFormProps> = ({
                         min={10}
                         max={1000}
                         step={10}
-                        defaultValue={[field.value]}
+                        value={[field.value]}
                         onValueChange={(value) => field.onChange(value[0])}
                         className="py-4"
                       />

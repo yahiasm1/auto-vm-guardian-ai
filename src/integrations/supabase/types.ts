@@ -184,6 +184,84 @@ export type Database = {
           },
         ]
       }
+      vm_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          description: string | null
+          id: string
+          status: string
+          vm_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          description?: string | null
+          id?: string
+          status: string
+          vm_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          description?: string | null
+          id?: string
+          status?: string
+          vm_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vm_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vm_status_history_vm_id_fkey"
+            columns: ["vm_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_machines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vm_templates: {
+        Row: {
+          cpu: number
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          os: string
+          ram: number
+          storage: number
+          updated_at: string
+        }
+        Insert: {
+          cpu: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          os: string
+          ram: number
+          storage: number
+          updated_at?: string
+        }
+        Update: {
+          cpu?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          os?: string
+          ram?: number
+          storage?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

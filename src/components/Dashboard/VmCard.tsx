@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Server, Power, Pause, Play, Trash2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { vmService } from '@/services/vmService';
 import { toast } from 'sonner';
 
 export type VMStatus = 'running' | 'stopped' | 'suspended' | 'creating' | 'error';
@@ -18,6 +19,7 @@ interface VmCardProps {
   storage: number;
   ip?: string; // Make ip optional so it can be undefined for VMs in 'creating' status
   isStudent?: boolean;
+  onStatusChange?: () => void; // Callback for parent components to refresh data
 }
 
 export const VmCard: React.FC<VmCardProps> = ({
@@ -29,8 +31,11 @@ export const VmCard: React.FC<VmCardProps> = ({
   ram,
   storage,
   ip,
-  isStudent = false
+  isStudent = false,
+  onStatusChange
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
   const getStatusColor = (status: VMStatus) => {
     switch(status) {
       case 'running': return 'bg-vm-running';
@@ -51,10 +56,40 @@ export const VmCard: React.FC<VmCardProps> = ({
     }
   };
   
-  const handleAction = (action: string) => {
-    toast(`${action} VM: ${name}`);
-    console.log(`${action} VM: ${id}`);
-    // In a real application, this would call an API to perform the action
+  const handleAction = async (action: string) => {
+    try {
+      setIsLoading(true);
+      
+      switch (action) {
+        case 'Start':
+          await vmService.startVM(id);
+          break;
+        case 'Stop':
+          await vmService.stopVM(id);
+          break;
+        case 'Suspend':
+          await vmService.suspendVM(id);
+          break;
+        case 'Delete':
+          await vmService.deleteVM(id);
+          break;
+        case 'Connect':
+          toast('Connecting to VM: ' + name);
+          console.log(`Connecting to VM: ${id}`);
+          // In a real app, this would open a terminal connection or VNC viewer
+          break;
+        default:
+          break;
+      }
+      
+      if (onStatusChange) {
+        onStatusChange();
+      }
+    } catch (error) {
+      console.error(`Error with ${action} operation:`, error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -96,7 +131,12 @@ export const VmCard: React.FC<VmCardProps> = ({
             {status === 'stopped' && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="sm" variant="outline" onClick={() => handleAction('Start')}>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => handleAction('Start')}
+                    disabled={isLoading || status === 'creating'}
+                  >
                     <Play size={16} className="mr-1" /> Start
                   </Button>
                 </TooltipTrigger>
@@ -108,7 +148,12 @@ export const VmCard: React.FC<VmCardProps> = ({
               <>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button size="sm" variant="outline" onClick={() => handleAction('Stop')}>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleAction('Stop')}
+                      disabled={isLoading}
+                    >
                       <Power size={16} className="mr-1" /> Stop
                     </Button>
                   </TooltipTrigger>
@@ -117,7 +162,12 @@ export const VmCard: React.FC<VmCardProps> = ({
                 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button size="sm" variant="outline" onClick={() => handleAction('Suspend')}>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleAction('Suspend')}
+                      disabled={isLoading}
+                    >
                       <Pause size={16} className="mr-1" /> Suspend
                     </Button>
                   </TooltipTrigger>
@@ -126,7 +176,12 @@ export const VmCard: React.FC<VmCardProps> = ({
                 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button size="sm" variant="default" onClick={() => handleAction('Connect')}>
+                    <Button 
+                      size="sm" 
+                      variant="default" 
+                      onClick={() => handleAction('Connect')}
+                      disabled={isLoading}
+                    >
                       <ExternalLink size={16} className="mr-1" /> Connect
                     </Button>
                   </TooltipTrigger>
@@ -138,7 +193,12 @@ export const VmCard: React.FC<VmCardProps> = ({
             {!isStudent && status !== 'creating' && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="sm" variant="destructive" onClick={() => handleAction('Delete')}>
+                  <Button 
+                    size="sm" 
+                    variant="destructive" 
+                    onClick={() => handleAction('Delete')}
+                    disabled={isLoading}
+                  >
                     <Trash2 size={16} className="mr-1" /> Delete
                   </Button>
                 </TooltipTrigger>
