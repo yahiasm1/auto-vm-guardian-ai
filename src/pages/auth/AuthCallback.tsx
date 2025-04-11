@@ -18,10 +18,16 @@ const AuthCallback: React.FC = () => {
         }
         
         // Get user role and redirect accordingly
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          throw new Error('No user found');
+        }
+        
         const { data: userData, error: userError } = await supabase
           .from('users')
           .select('role')
-          .eq('id', supabase.auth.getUser()?.data?.user?.id || '')
+          .eq('id', user.id)
           .single();
           
         if (userError && userError.code !== 'PGRST116') {
