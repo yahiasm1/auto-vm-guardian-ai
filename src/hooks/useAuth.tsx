@@ -1,6 +1,5 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -12,6 +11,7 @@ interface AuthContextProps {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   signUp: (email: string, password: string, name: string, role: string, department: string) => Promise<void>;
+  supabaseConfigured: boolean;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -20,13 +20,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [supabaseConfigured, setSupabaseConfigured] = useState<boolean>(isSupabaseConfigured());
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check if Supabase is configured before trying to use it
+    if (!supabaseConfigured) {
+      setLoading(false);
+      toast('Supabase configuration missing', {
+        description: 'Please check your environment variables',
+        style: { backgroundColor: 'rgb(239 68 68)' }
+      });
+      return;
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch(error => {
+      console.error('Error getting session:', error);
       setLoading(false);
     });
 
@@ -38,7 +52,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [supabaseConfigured]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -144,7 +158,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signOut, signUp }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      loading, 
+      signIn, 
+      signOut, 
+      signUp,
+      supabaseConfigured 
+    }}>
       {children}
     </AuthContext.Provider>
   );

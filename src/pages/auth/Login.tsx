@@ -6,13 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn, user, loading } = useAuth();
+  const { signIn, user, loading, supabaseConfigured } = useAuth();
 
   // If already logged in, redirect to appropriate dashboard
   if (!loading && user) {
@@ -33,6 +34,20 @@ const Login: React.FC = () => {
             Enter your credentials to sign in
           </CardDescription>
         </CardHeader>
+        
+        {!supabaseConfigured && (
+          <div className="px-6">
+            <Alert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Configuration Error</AlertTitle>
+              <AlertDescription>
+                Supabase configuration is missing. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY 
+                to your environment variables.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
