@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Session, User, Provider } from '@supabase/supabase-js';
@@ -38,7 +37,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if Supabase is configured before trying to use it
     if (!supabaseConfigured) {
       setLoading(false);
       toast('Supabase configuration missing', {
@@ -48,13 +46,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // Set up auth state listener FIRST to avoid missing auth events
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      // Only synchronous state updates here to prevent infinite loops
       setSession(newSession);
       setUser(newSession?.user ?? null);
       
-      // Use setTimeout to defer fetching notifications to avoid auth deadlocks
       if (newSession?.user) {
         setTimeout(() => {
           fetchUserNotifications(newSession.user.id);
@@ -64,13 +59,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
       setSession(existingSession);
       setUser(existingSession?.user ?? null);
       setLoading(false);
       
-      // If user is logged in, fetch their notifications
       if (existingSession?.user) {
         fetchUserNotifications(existingSession.user.id);
       }
@@ -114,7 +107,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
-      // Update the local state
       setNotifications(prev => 
         prev.map(notif => 
           notif.id === id ? { ...notif, read: true } : notif
@@ -137,7 +129,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
-      // Get user role and redirect accordingly
       if (data.user) {
         const { data: userData, error: userError } = await supabase
           .from('users')
@@ -176,7 +167,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
-      // Clear local state
       setUser(null);
       setSession(null);
       setNotifications([]);
@@ -193,7 +183,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const signUp = async (email: string, password: string, name: string, role: string, department: string) => {
     try {
-      // Create auth user without redirecting
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -211,30 +200,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
-      // Add user to users table
       if (data.user) {
-        // Use RPC to insert the user bypassing RLS policies that might cause recursion
-        const { error: insertError } = await supabase.from('users').insert({
-          id: data.user.id,
-          email,
-          name,
-          role: role as 'admin' | 'instructor' | 'student' | 'guest',
-          department,
-          status: 'pending',
-          last_active: new Date().toISOString(),
-          created_at: new Date().toISOString()
+        toast('Sign up successful', {
+          description: 'Please check your email for verification'
         });
-        
-        if (insertError) {
-          console.error('Error inserting user data:', insertError);
-          throw insertError;
-        }
+        navigate('/login');
       }
-      
-      toast('Sign up successful', {
-        description: 'Please check your email for verification'
-      });
-      navigate('/login');
     } catch (error: any) {
       toast('Sign up failed', {
         description: error.message || 'Something went wrong during signup',
@@ -256,8 +227,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
-      // The user will be redirected to the OAuth provider
-      // No need for navigation logic here as the auth state listener will handle it
     } catch (error: any) {
       toast('OAuth sign in failed', {
         description: error.message,
