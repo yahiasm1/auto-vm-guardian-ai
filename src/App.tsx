@@ -15,6 +15,10 @@ import SystemSettings from "./pages/admin/SystemSettings";
 import AiInsights from "./pages/admin/AiInsights";
 import StudentPortal from "./pages/StudentPortal";
 import StudentVms from "./pages/student/StudentVms";
+import StudentResources from "./pages/student/StudentResources";
+import Documentation from "./pages/student/Documentation";
+import Assignments from "./pages/student/Assignments";
+import Help from "./pages/student/Help";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +46,10 @@ const App = () => (
           {/* Student Routes */}
           <Route path="/student" element={<StudentPortal />} />
           <Route path="/student/vms" element={<StudentVms />} />
+          <Route path="/student/resources" element={<StudentResources />} />
+          <Route path="/student/docs" element={<Documentation />} />
+          <Route path="/student/assignments" element={<Assignments />} />
+          <Route path="/student/help" element={<Help />} />
           
           {/* 404 Route */}
           <Route path="*" element={<NotFound />} />
