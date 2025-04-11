@@ -72,7 +72,7 @@ export const VmCreationForm: React.FC<VmCreationFormProps> = ({
   isCreating = false,
 }) => {
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('none'); // Changed from empty string to 'none'
   const [loadingTemplates, setLoadingTemplates] = useState(false);
 
   const form = useForm<VmFormValues>({
@@ -101,7 +101,7 @@ export const VmCreationForm: React.FC<VmCreationFormProps> = ({
   const handleTemplateChange = (templateId: string) => {
     setSelectedTemplate(templateId);
     
-    if (!templateId) return;
+    if (templateId === 'none') return; // Changed condition to check for 'none' instead of empty string
     
     const template = templates.find(t => t.id === templateId);
     if (template) {
@@ -158,7 +158,7 @@ export const VmCreationForm: React.FC<VmCreationFormProps> = ({
                   <SelectValue placeholder={loadingTemplates ? 'Loading templates...' : 'Select a template'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem> {/* Changed from empty string to 'none' */}
                   {templates.map(template => (
                     <SelectItem key={template.id} value={template.id}>
                       {template.name} ({template.description})
