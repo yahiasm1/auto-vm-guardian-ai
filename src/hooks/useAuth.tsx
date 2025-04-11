@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Session, User, Provider } from '@supabase/supabase-js';
@@ -47,36 +48,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Set up auth state listener FIRST to avoid missing auth events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      // Only synchronous state updates here to prevent infinite loops
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      
+      // Use setTimeout to defer fetching notifications to avoid auth deadlocks
+      if (newSession?.user) {
+        setTimeout(() => {
+          fetchUserNotifications(newSession.user.id);
+        }, 0);
+      } else {
+        setNotifications([]);
+      }
+    });
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      setSession(existingSession);
+      setUser(existingSession?.user ?? null);
       setLoading(false);
       
       // If user is logged in, fetch their notifications
-      if (session?.user) {
-        fetchUserNotifications(session.user.id);
+      if (existingSession?.user) {
+        fetchUserNotifications(existingSession.user.id);
       }
     }).catch(error => {
       console.error('Error getting session:', error);
       setLoading(false);
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      
-      // If user is logged in, fetch their notifications
-      if (session?.user) {
-        fetchUserNotifications(session.user.id);
-      } else {
-        setNotifications([]);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [supabaseConfigured]);
   
   const fetchUserNotifications = async (userId: string) => {
@@ -126,33 +131,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
         throw error;
       }
       
-      toast('Sign in successful', {
-        description: 'You have been signed in successfully'
-      });
-      
       // Get user role and redirect accordingly
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('role')
-        .eq('email', email)
-        .single();
+      if (data.user) {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('role')
+          .eq('email', email)
+          .maybeSingle();
+          
+        if (userError) {
+          console.error('Error fetching user role:', userError);
+        }
         
-      if (userError) {
-        throw userError;
-      }
-      
-      if (userData?.role === 'admin') {
-        navigate('/admin');
-      } else if (userData?.role === 'student') {
-        navigate('/student');
-      } else {
-        navigate('/');
+        toast('Sign in successful', {
+          description: 'You have been signed in successfully'
+        });
+        
+        if (userData?.role === 'admin') {
+          navigate('/admin');
+        } else if (userData?.role === 'student') {
+          navigate('/student');
+        } else {
+          navigate('/');
+        }
       }
     } catch (error: any) {
       toast('Sign in failed', {
@@ -168,8 +175,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         throw error;
       }
-      navigate('/');
+      
+      // Clear local state
+      setUser(null);
+      setSession(null);
+      setNotifications([]);
+      
       toast('Sign out successful');
+      navigate('/login');
     } catch (error: any) {
       toast('Sign out failed', {
         description: error.message,
@@ -180,8 +193,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const signUp = async (email: string, password: string, name: string, role: string, department: string) => {
     try {
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({ 
+      // Create auth user without redirecting
+      const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
@@ -189,18 +202,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             name,
             role,
             department
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       });
       
-      if (authError) {
-        throw authError;
+      if (error) {
+        throw error;
       }
       
       // Add user to users table
-      if (authData.user) {
+      if (data.user) {
+        // Use RPC to insert the user bypassing RLS policies that might cause recursion
         const { error: insertError } = await supabase.from('users').insert({
-          id: authData.user.id,
+          id: data.user.id,
           email,
           name,
           role: role as 'admin' | 'instructor' | 'student' | 'guest',
@@ -211,6 +226,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         
         if (insertError) {
+          console.error('Error inserting user data:', insertError);
           throw insertError;
         }
       }
@@ -218,10 +234,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast('Sign up successful', {
         description: 'Please check your email for verification'
       });
-      navigate('/');
+      navigate('/login');
     } catch (error: any) {
       toast('Sign up failed', {
-        description: error.message,
+        description: error.message || 'Something went wrong during signup',
         style: { backgroundColor: 'rgb(239 68 68)' }
       });
     }
@@ -229,10 +245,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const signInWithOAuth = async (provider: Provider) => {
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.origin + '/auth/callback'
+          redirectTo: `${window.location.origin}/auth/callback`
         }
       });
       

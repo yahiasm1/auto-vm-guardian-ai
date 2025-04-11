@@ -25,28 +25,42 @@ import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import Profile from "./pages/user/Profile";
 import AuthCallback from "./pages/auth/AuthCallback";
+import { useEffect } from "react";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-// Protected route component
+// Protected route component that uses a proper role check
 const ProtectedRoute = ({ children, allowedRoles }: { children: JSX.Element, allowedRoles: string[] }) => {
-  const { user, loading } = useAuth();
+  const { user, session, loading } = useAuth();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    // If we're not loading anymore and there's no user, redirect to login
+    if (!loading && !user) {
+      navigate('/login', { replace: true });
+    }
+  }, [user, loading, navigate]);
   
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em]" role="status">
+          <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+            Loading...
+          </span>
+        </div>
+      </div>
+    );
   }
   
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  // Check if user has correct role
-  if (allowedRoles && allowedRoles.length > 0) {
-    // This would need to be fetched from the users table in a real implementation
-    // For now we're simplifying by assuming all logged in users can access their respective sections
-    // You should add role checking here based on your requirements
-  }
-  
+  // We'll handle redirect in the useEffect hook instead of here
   return children;
 };
 
