@@ -1,12 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/Layout/DashboardLayout';
-import { VmCard } from '@/components/Dashboard/VmCard';
+import { VmCard, VMStatus } from '@/components/Dashboard/VmCard';
 import { ResourceUsageChart } from '@/components/Dashboard/ResourceUsageChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Server, BookOpen, FileText } from 'lucide-react';
+import { Server, BookOpen, FileText, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 
-// Sample data
+// Resource usage data
 const resourceData = [
   { name: '00:00', cpu: 10, ram: 25, storage: 40 },
   { name: '03:00', cpu: 15, ram: 25, storage: 40 },
@@ -19,12 +20,24 @@ const resourceData = [
   { name: 'Now', cpu: 30, ram: 35, storage: 42 },
 ];
 
-const studentVMs = [
+// Student VM data
+interface StudentVM {
+  id: string;
+  name: string;
+  os: string;
+  status: VMStatus;
+  cpu: number;
+  ram: number;
+  storage: number;
+  ip?: string;
+}
+
+const initialStudentVMs: StudentVM[] = [
   {
     id: 'svm1',
     name: 'Web-Dev-Environment',
     os: 'Ubuntu 20.04 LTS',
-    status: 'running' as const,
+    status: 'running',
     cpu: 2,
     ram: 4,
     storage: 50,
@@ -34,7 +47,7 @@ const studentVMs = [
     id: 'svm2',
     name: 'Database-Class',
     os: 'CentOS 8',
-    status: 'stopped' as const,
+    status: 'stopped',
     cpu: 4,
     ram: 8,
     storage: 100,
@@ -42,18 +55,47 @@ const studentVMs = [
   },
 ];
 
-const courseMaterials = [
+// Course materials data
+interface CourseMaterial {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+}
+
+const courseMaterials: CourseMaterial[] = [
   { id: 'cm1', title: 'Linux Fundamentals', description: 'Introduction to Linux commands and file system', date: '2025-03-15' },
   { id: 'cm2', title: 'Database Design', description: 'Relational database concepts and SQL', date: '2025-03-22' },
   { id: 'cm3', title: 'Web Development', description: 'HTML, CSS, and JavaScript basics', date: '2025-04-02' },
 ];
 
-const assignments = [
+// Assignment data
+interface Assignment {
+  id: string;
+  title: string;
+  description: string;
+  dueDate: string;
+  status: 'pending' | 'submitted' | 'graded';
+}
+
+const assignments: Assignment[] = [
   { id: 'asg1', title: 'Linux Server Setup', description: 'Configure a web server with Apache', dueDate: '2025-04-15', status: 'pending' },
   { id: 'asg2', title: 'Database Creation', description: 'Design and implement a database schema', dueDate: '2025-04-25', status: 'pending' },
 ];
 
 const StudentPortal: React.FC = () => {
+  const [studentVMs, setStudentVMs] = useState<StudentVM[]>(initialStudentVMs);
+  
+  const handleMaterialClick = (material: CourseMaterial) => {
+    toast(`Opening material: ${material.title}`);
+    // In a real app, this would open the material in a new page or modal
+  };
+  
+  const handleAssignmentClick = (assignment: Assignment) => {
+    toast(`Opening assignment: ${assignment.title}`);
+    // In a real app, this would open the assignment in a new page or modal
+  };
+
   return (
     <DashboardLayout title="Student Portal" userType="student">
       <div className="space-y-6">
@@ -146,11 +188,15 @@ const StudentPortal: React.FC = () => {
             <CardContent>
               <ul className="space-y-3">
                 {courseMaterials.map((material) => (
-                  <li key={material.id} className="p-3 border rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
+                  <li 
+                    key={material.id} 
+                    className="p-3 border rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
+                    onClick={() => handleMaterialClick(material)}
+                  >
                     <h3 className="font-medium">{material.title}</h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">{material.description}</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                      Date: {material.date}
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 flex items-center">
+                      <Clock size={12} className="mr-1" /> {material.date}
                     </p>
                   </li>
                 ))}
@@ -169,7 +215,11 @@ const StudentPortal: React.FC = () => {
             <CardContent>
               <ul className="space-y-3">
                 {assignments.map((assignment) => (
-                  <li key={assignment.id} className="p-3 border rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
+                  <li 
+                    key={assignment.id} 
+                    className="p-3 border rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer"
+                    onClick={() => handleAssignmentClick(assignment)}
+                  >
                     <div className="flex justify-between">
                       <h3 className="font-medium">{assignment.title}</h3>
                       <span className="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
@@ -177,8 +227,8 @@ const StudentPortal: React.FC = () => {
                       </span>
                     </div>
                     <p className="text-sm text-slate-500 dark:text-slate-400">{assignment.description}</p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                      Due: {assignment.dueDate}
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 flex items-center">
+                      <Clock size={12} className="mr-1" /> Due: {assignment.dueDate}
                     </p>
                   </li>
                 ))}

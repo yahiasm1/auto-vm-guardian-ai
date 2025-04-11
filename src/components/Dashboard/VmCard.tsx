@@ -4,6 +4,7 @@ import { Server, Power, Pause, Play, Trash2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { toast } from 'sonner';
 
 export type VMStatus = 'running' | 'stopped' | 'suspended' | 'creating' | 'error';
 
@@ -49,6 +50,12 @@ export const VmCard: React.FC<VmCardProps> = ({
       case 'error': return 'Error';
     }
   };
+  
+  const handleAction = (action: string) => {
+    toast(`${action} VM: ${name}`);
+    console.log(`${action} VM: ${id}`);
+    // In a real application, this would call an API to perform the action
+  };
 
   return (
     <Card className="h-full">
@@ -89,7 +96,7 @@ export const VmCard: React.FC<VmCardProps> = ({
             {status === 'stopped' && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="sm" variant="outline">
+                  <Button size="sm" variant="outline" onClick={() => handleAction('Start')}>
                     <Play size={16} className="mr-1" /> Start
                   </Button>
                 </TooltipTrigger>
@@ -101,7 +108,7 @@ export const VmCard: React.FC<VmCardProps> = ({
               <>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" onClick={() => handleAction('Stop')}>
                       <Power size={16} className="mr-1" /> Stop
                     </Button>
                   </TooltipTrigger>
@@ -110,7 +117,7 @@ export const VmCard: React.FC<VmCardProps> = ({
                 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" onClick={() => handleAction('Suspend')}>
                       <Pause size={16} className="mr-1" /> Suspend
                     </Button>
                   </TooltipTrigger>
@@ -119,7 +126,7 @@ export const VmCard: React.FC<VmCardProps> = ({
                 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button size="sm" variant="default">
+                    <Button size="sm" variant="default" onClick={() => handleAction('Connect')}>
                       <ExternalLink size={16} className="mr-1" /> Connect
                     </Button>
                   </TooltipTrigger>
@@ -131,7 +138,7 @@ export const VmCard: React.FC<VmCardProps> = ({
             {!isStudent && status !== 'creating' && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="sm" variant="destructive">
+                  <Button size="sm" variant="destructive" onClick={() => handleAction('Delete')}>
                     <Trash2 size={16} className="mr-1" /> Delete
                   </Button>
                 </TooltipTrigger>
