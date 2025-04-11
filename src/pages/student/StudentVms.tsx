@@ -9,7 +9,9 @@ import { useQuery } from '@tanstack/react-query';
 import { vmService } from '@/services/vmService';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { VirtualMachine } from '@/services/vmService';
 
+// Define our VM type for TypeScript that matches what we get from the API
 interface StudentVM {
   id: string;
   name: string;
@@ -50,7 +52,10 @@ const StudentVms: React.FC = () => {
     }
   }, [error]);
 
-  const filteredVMs = studentVMs.filter((vm: StudentVM) => {
+  // Ensure we're properly casting the VM data from API to our expected type
+  const typedVMs = studentVMs as StudentVM[];
+
+  const filteredVMs = typedVMs.filter((vm: StudentVM) => {
     const matchesSearch = vm.name.toLowerCase().includes(search.toLowerCase()) ||
                         vm.os.toLowerCase().includes(search.toLowerCase()) ||
                         vm.course?.toLowerCase().includes(search.toLowerCase()) ||

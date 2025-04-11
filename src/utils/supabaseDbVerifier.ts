@@ -21,7 +21,7 @@ export const verifyDatabaseTables = async (): Promise<{
         // Try to get the count of rows from each table
         // This will fail if the table doesn't exist
         const { count, error } = await supabase
-          .from(tableName)
+          .from(tableName as any)
           .select('*', { count: 'exact', head: true });
           
         if (!error) {
