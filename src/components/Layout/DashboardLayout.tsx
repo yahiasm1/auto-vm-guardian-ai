@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { NotificationsPopover } from '../Notifications/NotificationsPopover';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
 interface DashboardLayoutProps {
@@ -22,6 +22,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Failed to sign out:', error);
+    }
+  };
   
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
@@ -76,7 +86,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       Profile Settings
                     </Link>
                     <button
-                      onClick={() => signOut()}
+                      onClick={handleSignOut}
                       className="text-sm px-2 py-1.5 hover:bg-muted rounded-md text-left text-red-500"
                     >
                       Sign Out
