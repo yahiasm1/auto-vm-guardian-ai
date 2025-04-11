@@ -20,6 +20,7 @@ interface VmCardProps {
   ip?: string; // Make ip optional so it can be undefined for VMs in 'creating' status
   isStudent?: boolean;
   onStatusChange?: () => void; // Callback for parent components to refresh data
+  onConnect?: () => void; // Callback for connecting to the VM
 }
 
 export const VmCard: React.FC<VmCardProps> = ({
@@ -32,7 +33,8 @@ export const VmCard: React.FC<VmCardProps> = ({
   storage,
   ip,
   isStudent = false,
-  onStatusChange
+  onStatusChange,
+  onConnect
 }) => {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -74,9 +76,13 @@ export const VmCard: React.FC<VmCardProps> = ({
           await vmService.deleteVM(id);
           break;
         case 'Connect':
-          toast('Connecting to VM: ' + name);
-          console.log(`Connecting to VM: ${id}`);
-          // In a real app, this would open a terminal connection or VNC viewer
+          if (onConnect) {
+            onConnect();
+          } else {
+            toast('Connecting to VM: ' + name);
+            console.log(`Connecting to VM: ${id}`);
+            // In a real app, this would open a terminal connection or VNC viewer
+          }
           break;
         default:
           break;
