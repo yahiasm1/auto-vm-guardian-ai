@@ -17,5 +17,5 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
 
 // Function to check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
-  return supabaseUrl && supabaseKey;
+  return Boolean(supabaseUrl && supabaseKey);
 };
