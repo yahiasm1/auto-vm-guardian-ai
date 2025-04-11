@@ -220,7 +220,7 @@ serve(async (req) => {
         });
         
       case "get_assignments":
-        const { data: assignments, error: assignmentsError } = await supabaseClient
+        const { data: assignmentsData, error: assignmentsError } = await supabaseClient
           .from("assignments")
           .select("*")
           .order("due_date", { ascending: true });
@@ -228,7 +228,7 @@ serve(async (req) => {
         if (assignmentsError) throw assignmentsError;
         
         // Transform to match frontend expected format
-        const transformedAssignments = assignments.map(assign => ({
+        const transformedAssignments = assignmentsData.map(assign => ({
           id: assign.id,
           title: assign.title,
           description: assign.description,
@@ -304,7 +304,7 @@ serve(async (req) => {
         if (materialSeedError) throw materialSeedError;
         
         // Seed assignments
-        const assignments = [
+        const assignmentItems = [
           { 
             title: "Linux Server Setup", 
             description: "Configure a web server with Apache", 
@@ -321,7 +321,7 @@ serve(async (req) => {
         
         const { error: assignmentSeedError } = await supabaseClient
           .from("assignments")
-          .insert(assignments);
+          .insert(assignmentItems);
           
         if (assignmentSeedError) throw assignmentSeedError;
         

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/Layout/DashboardLayout';
 import { VmCard, VMStatus } from '@/components/Dashboard/VmCard';
@@ -16,8 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
 
-// Define our VM type for TypeScript that matches what we get from the API
 interface StudentVM {
   id: string;
   name: string;
@@ -33,7 +32,6 @@ interface StudentVM {
   last_updated?: string;
 }
 
-// Resource usage data for the VM
 interface ResourceUsage {
   cpu: number;
   ram: number;
@@ -48,6 +46,30 @@ const StudentVms: React.FC = () => {
   const [selectedVM, setSelectedVM] = useState<string | null>(null);
   const [resourcesTab, setResourcesTab] = useState<string>('usage');
   const [showConsole, setShowConsole] = useState<boolean>(false);
+  const [isSeeding, setIsSeeding] = useState<boolean>(false);
+
+  const seedInitialData = async () => {
+    if (!user?.id) return;
+    
+    setIsSeeding(true);
+    try {
+      await supabase.functions.invoke('vm-management', {
+        body: { 
+          action: 'seed_initial_data',
+          userId: user.id
+        },
+        method: 'POST'
+      });
+      
+      toast.success('Sample data has been added to your account');
+      refetch();
+    } catch (error) {
+      console.error('Error seeding data:', error);
+      toast.error('Failed to seed initial data');
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   const {
     data: studentVMs = [],
@@ -58,7 +80,7 @@ const StudentVms: React.FC = () => {
     queryKey: ['studentVirtualMachines', user?.id],
     queryFn: () => vmService.getVMsByUserId(user?.id || ''),
     enabled: !!user?.id,
-    retry: 1, // Only retry once to avoid excessive error messages
+    retry: 1
   });
   
   const {
@@ -79,7 +101,6 @@ const StudentVms: React.FC = () => {
     }
   }, [error]);
 
-  // Cast the VM data from API to our expected type with proper status typing
   const typedVMs: StudentVM[] = studentVMs.map((vm: VirtualMachine) => ({
     ...vm,
     status: vm.status as VMStatus
@@ -97,7 +118,6 @@ const StudentVms: React.FC = () => {
   });
 
   const handleStatusChange = () => {
-    // Refetch VM data when status changes
     refetch();
   };
 
@@ -106,7 +126,6 @@ const StudentVms: React.FC = () => {
     setShowConsole(true);
   };
 
-  // Sample resource usage data for demo purposes
   const sampleResourceData = [
     { name: '00:00', cpu: 10, ram: 25, storage: 40 },
     { name: '03:00', cpu: 15, ram: 25, storage: 40 },
@@ -122,7 +141,6 @@ const StudentVms: React.FC = () => {
   return (
     <DashboardLayout title="My Virtual Machines" userType="student">
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold">My Virtual Machines</h2>
@@ -131,17 +149,27 @@ const StudentVms: React.FC = () => {
             </p>
           </div>
           
-          <Button 
-            variant="outline" 
-            onClick={() => refetch()} 
-            disabled={isLoading}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /> Refresh
-          </Button>
+          <div className="flex gap-2">
+            {typedVMs.length === 0 && !isLoading && (
+              <Button 
+                onClick={seedInitialData} 
+                disabled={isSeeding}
+                className="flex items-center gap-2"
+              >
+                {isSeeding ? 'Adding Sample Data...' : 'Add Sample VMs'}
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              onClick={() => refetch()} 
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} /> Refresh
+            </Button>
+          </div>
         </div>
 
-        {/* Filters */}
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative grow max-w-md">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -169,7 +197,6 @@ const StudentVms: React.FC = () => {
           </div>
         </div>
 
-        {/* VM List */}
         {isLoading ? (
           <div className="flex flex-col items-center justify-center p-8">
             <Server size={48} className="text-muted-foreground animate-pulse mb-4" />
@@ -213,18 +240,29 @@ const StudentVms: React.FC = () => {
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-muted-foreground">
-                    {search || statusFilter !== 'all' 
-                      ? 'No virtual machines match your filters.' 
-                      : 'You don\'t have any virtual machines yet.'}
-                  </p>
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <Server size={48} className="text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground mb-4">
+                      {search || statusFilter !== 'all' 
+                        ? 'No virtual machines match your filters.' 
+                        : 'You don\'t have any virtual machines yet.'}
+                    </p>
+                    
+                    {!search && statusFilter === 'all' && (
+                      <Button 
+                        onClick={seedInitialData} 
+                        disabled={isSeeding}
+                      >
+                        {isSeeding ? 'Adding Sample Data...' : 'Add Sample VMs'}
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
             )}
           </>
         )}
 
-        {/* Resource Usage Summary */}
         <Card className="mt-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -282,7 +320,6 @@ const StudentVms: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Network Configuration */}
         <Card className="mt-4">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -317,7 +354,6 @@ const StudentVms: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Usage Tips */}
         <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
           <h3 className="text-lg font-semibold mb-2">VM Usage Tips</h3>
           <ul className="list-disc list-inside text-sm space-y-1 text-slate-600 dark:text-slate-300">
@@ -329,7 +365,6 @@ const StudentVms: React.FC = () => {
         </div>
       </div>
 
-      {/* Web Console Modal */}
       <Sheet open={showConsole} onOpenChange={setShowConsole}>
         <SheetContent side="right" className="w-[90%] sm:w-[540px] md:w-[720px] p-0">
           <SheetHeader className="p-6 border-b">
