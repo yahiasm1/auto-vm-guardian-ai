@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-type VMStatus = 'running' | 'stopped' | 'suspended' | 'creating' | 'error';
+export type VMStatus = 'running' | 'stopped' | 'suspended' | 'creating' | 'error';
 
 interface VmCardProps {
   id: string;
@@ -15,7 +15,7 @@ interface VmCardProps {
   cpu: number;
   ram: number;
   storage: number;
-  ip?: string;
+  ip?: string; // Make ip optional so it can be undefined for VMs in 'creating' status
   isStudent?: boolean;
 }
 

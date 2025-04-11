@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/Layout/DashboardLayout';
 import { StatusOverview } from '@/components/Dashboard/StatusOverview';
 import { ResourceUsageChart } from '@/components/Dashboard/ResourceUsageChart';
-import { VmCard } from '@/components/Dashboard/VmCard';
+import { VmCard, VMStatus } from '@/components/Dashboard/VmCard';
 import { AiPredictionCard } from '@/components/Dashboard/AiPredictionCard';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
@@ -25,7 +24,7 @@ const statusItems = [
     name: 'CPU Usage',
     value: '68%',
     icon: <Cpu size={20} className="text-vmSystem-teal" />,
-    status: 'warning',
+    status: 'warning' as const,
   },
   {
     id: 'storage',
@@ -39,7 +38,7 @@ const statusItems = [
     name: 'Network',
     value: '1.8Gbps',
     icon: <Wifi size={20} className="text-orange-500" />,
-    status: 'normal',
+    status: 'normal' as const,
   },
   {
     id: 'users',
@@ -62,12 +61,23 @@ const resourceData = [
   { name: 'Now', cpu: 60, ram: 50, storage: 50 },
 ];
 
-const vmSampleData = [
+interface VM {
+  id: string;
+  name: string;
+  os: string;
+  status: VMStatus;
+  cpu: number;
+  ram: number;
+  storage: number;
+  ip?: string;
+}
+
+const vmSampleData: VM[] = [
   {
     id: 'vm1',
     name: 'Ubuntu-Web-Server',
     os: 'Ubuntu 20.04 LTS',
-    status: 'running' as const,
+    status: 'running',
     cpu: 4,
     ram: 8,
     storage: 100,
@@ -77,7 +87,7 @@ const vmSampleData = [
     id: 'vm2',
     name: 'Win10-Dev',
     os: 'Windows 10 Pro',
-    status: 'running' as const,
+    status: 'running',
     cpu: 8,
     ram: 16,
     storage: 250,
@@ -87,7 +97,7 @@ const vmSampleData = [
     id: 'vm3',
     name: 'DB-Server',
     os: 'CentOS 8',
-    status: 'stopped' as const,
+    status: 'stopped',
     cpu: 8,
     ram: 32,
     storage: 500,
@@ -97,7 +107,7 @@ const vmSampleData = [
     id: 'vm4',
     name: 'Test-Environment',
     os: 'Debian 11',
-    status: 'suspended' as const,
+    status: 'suspended',
     cpu: 2,
     ram: 4,
     storage: 50,
@@ -117,7 +127,7 @@ const predictionData = [
 
 const AdminDashboard: React.FC = () => {
   const [creatingVM, setCreatingVM] = useState(false);
-  const [vms, setVMs] = useState(vmSampleData);
+  const [vms, setVMs] = useState<VM[]>(vmSampleData);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -126,14 +136,15 @@ const AdminDashboard: React.FC = () => {
     
     // Simulate API call
     setTimeout(() => {
-      const newVM = {
+      const newVM: VM = {
         id: `vm${vms.length + 1}`,
         name: data.name,
         os: data.os,
-        status: 'creating' as const,
+        status: 'creating',
         cpu: data.cpuCores,
         ram: data.ramGB,
         storage: data.storageGB,
+        // No IP is assigned initially during creation
       };
       
       setVMs([...vms, newVM]);
@@ -150,7 +161,7 @@ const AdminDashboard: React.FC = () => {
         setVMs(prevVMs => 
           prevVMs.map(vm => 
             vm.id === newVM.id 
-              ? { ...vm, status: 'running' as const, ip: '192.168.1.105' } 
+              ? { ...vm, status: 'running' as VMStatus, ip: '192.168.1.105' } 
               : vm
           )
         );
