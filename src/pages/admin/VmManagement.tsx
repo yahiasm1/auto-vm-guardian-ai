@@ -120,8 +120,8 @@ const VmManagement: React.FC = () => {
       setCreatingVM(false);
       setDialogOpen(false);
       
-      toast({
-        title: 'VM Creation Started',
+      // Fix: Change the toast call to use the correct format for sonner
+      toast('VM Creation Started', {
         description: `${data.name} is being created. This may take a few minutes.`,
       });
       
@@ -135,8 +135,8 @@ const VmManagement: React.FC = () => {
           )
         );
         
-        toast({
-          title: 'VM Created Successfully',
+        // Fix: Change the toast call to use the correct format for sonner
+        toast('VM Created Successfully', {
           description: `${data.name} is now running and ready to use.`,
         });
       }, 5000);
@@ -144,7 +144,10 @@ const VmManagement: React.FC = () => {
   };
 
   const handleExportCSV = () => {
-    toast('Exporting VM list to CSV...');
+    // Fix: Change the toast call to use the correct format for sonner
+    toast('Exporting VM List', {
+      description: 'Your VM list is being exported to CSV...'
+    });
     // In a real app, this would generate and download a CSV file
   };
 
