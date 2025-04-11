@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/Layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +6,7 @@ import { ResourceUsageChart } from '@/components/Dashboard/ResourceUsageChart';
 import { Progress } from '@/components/ui/progress';
 import { 
   Cpu, 
-  Memory, 
+  MemoryStick, 
   PlusCircle, 
   MinusCircle,
   HardDrive, 
@@ -24,7 +23,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// Sample resource data
 const resourceData = [
   { name: '00:00', cpu: 15, ram: 30, storage: 45 },
   { name: '03:00', cpu: 20, ram: 32, storage: 45 },
@@ -116,13 +114,11 @@ const ResourceAllocation: React.FC = () => {
       <div className="space-y-6">
         <h2 className="text-2xl font-bold">Resource Pool Management</h2>
 
-        {/* Current Resource Usage Chart */}
         <ResourceUsageChart 
           title="System Resource Utilization (24h)" 
           data={resourceData} 
         />
 
-        {/* Resource Pools */}
         <div>
           <h3 className="text-xl font-semibold mb-4">Resource Pools</h3>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -192,7 +188,7 @@ const ResourceAllocation: React.FC = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between items-center text-sm">
                         <div className="flex items-center">
-                          <Memory size={16} className="mr-2 text-green-500" />
+                          <MemoryStick size={16} className="mr-2 text-green-500" />
                           <span>RAM Allocation</span>
                         </div>
                         <span className="font-medium">{pool.allocatedRAM} / {pool.ramGB} GB</span>
@@ -232,7 +228,6 @@ const ResourceAllocation: React.FC = () => {
           </div>
         </div>
 
-        {/* Resource Allocation Table */}
         <div>
           <Card>
             <CardHeader>
