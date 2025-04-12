@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Session, User, Provider } from '@supabase/supabase-js';
@@ -183,6 +184,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const signUp = async (email: string, password: string, name: string, role: string, department: string) => {
     try {
+      // Only create the auth user, the actual user record will be created in the AuthCallback component
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,

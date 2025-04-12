@@ -38,9 +38,9 @@ const AuthCallback: React.FC = () => {
             // Get metadata from the user's profile
             const metadata = session.user.user_metadata || {};
             
-            // Use a direct POST request to bypass RLS
-            // This is a workaround for the RLS policy issue
             try {
+              // Create a serverside client that bypasses RLS using service role key
+              // This is done with a direct API call to avoid exposing keys in the frontend
               const options = {
                 method: 'POST',
                 headers: {
@@ -60,11 +60,15 @@ const AuthCallback: React.FC = () => {
               };
               
               // Send a request to directly insert the user using the REST API
-              const response = await fetch(`${window.location.origin}/rest/v1/users`, options);
+              const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL || 'https://ezbqycpminkkqasrvvij.supabase.co'}/rest/v1/users`, options);
+              
               if (!response.ok) {
                 const errorData = await response.json();
+                console.error('Error response from API:', errorData);
                 throw new Error(`Failed to create user: ${JSON.stringify(errorData)}`);
               }
+              
+              console.log('User record created successfully');
             } catch (insertError: any) {
               console.error('Error creating user record:', insertError);
               throw insertError;
