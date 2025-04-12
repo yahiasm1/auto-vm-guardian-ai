@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +13,7 @@ import Network from "./pages/admin/Network";
 import UserManagement from "./pages/admin/UserManagement";
 import SystemSettings from "./pages/admin/SystemSettings";
 import AiInsights from "./pages/admin/AiInsights";
+import CreateDummyUsers from "./pages/admin/CreateDummyUsers";
 import StudentPortal from "./pages/StudentPortal";
 import StudentVms from "./pages/student/StudentVms";
 import StudentResources from "./pages/student/StudentResources";
