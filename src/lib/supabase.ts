@@ -15,8 +15,8 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseKey, {
   }
 });
 
-// Expose the key for direct API calls
-supabase.supabaseKey = supabaseKey;
+// Export the anon key separately for direct API calls
+export const supabaseAnonKey = supabaseKey;
 
 // Function to check if Supabase is properly configured
 export const isSupabaseConfigured = () => {

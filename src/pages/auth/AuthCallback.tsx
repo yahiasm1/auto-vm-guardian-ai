@@ -1,11 +1,12 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -24,7 +25,7 @@ const AuthCallback: React.FC = () => {
         }
         
         // Get user role and redirect accordingly
-        const { data: userData, error: userError } = await supabase
+        let { data: userData, error: userError } = await supabase
           .from('users')
           .select('role')
           .eq('id', session.user.id)
@@ -48,7 +49,8 @@ const AuthCallback: React.FC = () => {
                 headers: {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${session.access_token}`,
-                  'apikey': supabase.supabaseKey
+                  // We'll use the anon key directly rather than accessing it from the client
+                  'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6YnF5Y3BtaW5ra3Fhc3J2dmlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ0MDI5MzgsImV4cCI6MjA1OTk3ODkzOH0.wbCCHIaWwSTY2-mxCcgpUfCysZmaKIc6YbmBfRvIAic'
                 },
                 body: JSON.stringify({
                   id: session.user.id,
@@ -62,7 +64,7 @@ const AuthCallback: React.FC = () => {
                 })
               };
               
-              const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ezbqycpminkkqasrvvij.supabase.co';
+              const supabaseUrl = 'https://ezbqycpminkkqasrvvij.supabase.co';
               console.log('Sending request to:', `${supabaseUrl}/rest/v1/users`);
               
               // Send a request to directly insert the user using the REST API
@@ -87,7 +89,7 @@ const AuthCallback: React.FC = () => {
                   console.error('Error fetching newly created user:', newUserError);
                 } else {
                   console.log('Fetched new user data:', newUserData);
-                  // Update userData for redirect logic
+                  // Update userData by reassigning to our let variable
                   userData = newUserData;
                 }
               }
@@ -118,6 +120,8 @@ const AuthCallback: React.FC = () => {
           style: { backgroundColor: 'rgb(239 68 68)' }
         });
         navigate('/login');
+      } finally {
+        setIsLoading(false);
       }
     };
 
