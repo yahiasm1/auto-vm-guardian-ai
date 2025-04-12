@@ -22,7 +22,7 @@ const Signup: React.FC = () => {
 
   // If already logged in, redirect
   if (!loading && user) {
-    return <Navigate to="/student" replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   const validatePassword = () => {
@@ -41,10 +41,7 @@ const Signup: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validatePassword()) return;
-    
-    // Always set role to student for the signup page
-    console.log("Submitting signup form with role: student, department:", department);
-    await signUp(email, password, name, 'student', department);
+    await signUp(email, password, name, role, department);
   };
 
   return (
@@ -53,7 +50,7 @@ const Signup: React.FC = () => {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Create an Account</CardTitle>
           <CardDescription className="text-center">
-            Enter your information to create a student account
+            Enter your information to create an account
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -81,7 +78,21 @@ const Signup: React.FC = () => {
               />
             </div>
             
-            <input type="hidden" name="role" value="student" />
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="instructor">Instructor</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500">
+                Note: Admin accounts are created by system administrators
+              </p>
+            </div>
             
             <div className="space-y-2">
               <Label htmlFor="department">Department</Label>
@@ -134,16 +145,12 @@ const Signup: React.FC = () => {
                 <p className="text-sm text-red-500">{passwordError}</p>
               )}
             </div>
-            
-            <div className="text-xs text-slate-500">
-              <p>Admin accounts are created by system administrators only</p>
-            </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full">Sign Up as Student</Button>
+            <Button type="submit" className="w-full">Sign Up</Button>
             <div className="text-center text-sm">
               Already have an account?{' '}
-              <Link to="/student" className="text-primary hover:underline">
+              <Link to="/login" className="text-primary hover:underline">
                 Sign in
               </Link>
             </div>

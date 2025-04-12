@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Link, Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,12 +15,7 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loginError, setLoginError] = useState<string | null>(null);
   const { signIn, signInWithOAuth, user, loading, supabaseConfigured } = useAuth();
-  const location = useLocation();
-  const isAdminPortal = location.pathname === '/login' || location.pathname.startsWith('/admin');
-  const isStudentPortal = location.pathname.startsWith('/student');
-  
   const [databaseStatus, setDatabaseStatus] = useState<{
     checked: boolean;
     success: boolean;
@@ -56,21 +51,11 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoginError(null); // Reset any previous errors
-    
-    try {
-      await signIn(email, password);
-    } catch (error: any) {
-      setLoginError(error.message || 'Failed to sign in. Please check your credentials.');
-    }
+    await signIn(email, password);
   };
 
   const handleOAuthLogin = async (provider: 'github' | 'google') => {
-    try {
-      await signInWithOAuth(provider);
-    } catch (error: any) {
-      setLoginError(error.message || `Failed to sign in with ${provider}.`);
-    }
+    await signInWithOAuth(provider);
   };
 
   return (
@@ -109,16 +94,6 @@ const Login: React.FC = () => {
           </div>
         )}
         
-        {loginError && (
-          <div className="px-6">
-            <Alert variant="destructive" className="mb-4">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Authentication Error</AlertTitle>
-              <AlertDescription>{loginError}</AlertDescription>
-            </Alert>
-          </div>
-        )}
-        
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -135,16 +110,9 @@ const Login: React.FC = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                {!isAdminPortal && (
-                  <Link to="/forgot-password" className="text-xs text-primary hover:underline">
-                    Forgot password?
-                  </Link>
-                )}
-                {isAdminPortal && (
-                  <a href="#" className="text-xs text-primary hover:underline">
-                    Forgot password?
-                  </a>
-                )}
+                <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                  Forgot password?
+                </Link>
               </div>
               <div className="relative">
                 <Input
@@ -165,57 +133,48 @@ const Login: React.FC = () => {
               </div>
             </div>
             
-            <Button type="submit" className="w-full">
-              {isAdminPortal ? "Sign In" : "Sign In with Email"}
-            </Button>
+            <Button type="submit" className="w-full">Sign In with Email</Button>
             
-            {!isAdminPortal && (
-              <>
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">
-                      Or continue with
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    onClick={() => handleOAuthLogin('github')}
-                    className="flex items-center justify-center gap-2"
-                  >
-                    <Github size={16} />
-                    GitHub
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    onClick={() => handleOAuthLogin('google')}
-                    className="flex items-center justify-center gap-2"
-                  >
-                    <Mail size={16} />
-                    Google
-                  </Button>
-                </div>
-              </>
-            )}
-          </CardContent>
-          
-          {!isAdminPortal && (
-            <CardFooter className="flex flex-col space-y-4">
-              <div className="text-center text-sm">
-                Don't have an account?{' '}
-                <Link to="/signup" className="text-primary hover:underline">
-                  Sign up
-                </Link>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
               </div>
-            </CardFooter>
-          )}
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                type="button" 
+                variant="outline"
+                onClick={() => handleOAuthLogin('github')}
+                className="flex items-center justify-center gap-2"
+              >
+                <Github size={16} />
+                GitHub
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline"
+                onClick={() => handleOAuthLogin('google')}
+                className="flex items-center justify-center gap-2"
+              >
+                <Mail size={16} />
+                Google
+              </Button>
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <div className="text-center text-sm">
+              Don't have an account?{' '}
+              <Link to="/signup" className="text-primary hover:underline">
+                Sign up
+              </Link>
+            </div>
+          </CardFooter>
         </form>
       </Card>
     </div>

@@ -1,12 +1,11 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, supabaseAnonKey } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -25,39 +24,34 @@ const AuthCallback: React.FC = () => {
         }
         
         // Get user role and redirect accordingly
-        let { data: userData, error: userError } = await supabase
+        const { data: userData, error: userError } = await supabase
           .from('users')
           .select('role')
           .eq('id', session.user.id)
           .maybeSingle();
           
-        if (userError || !userData) {
-          console.error('Error fetching user data or user not found:', userError);
+        if (userError) {
+          console.error('Error fetching user data:', userError);
           
           // If user doesn't exist in the users table yet, we need to create them
           if (session.user) {
-            console.log('Creating user record for:', session.user.id);
             // Get metadata from the user's profile
             const metadata = session.user.user_metadata || {};
-            console.log('User metadata:', metadata);
             
+            // Use a direct POST request to bypass RLS
+            // This is a workaround for the RLS policy issue
             try {
-              // Create a serverside client that bypasses RLS using service role key
-              // This is done with a direct API call to avoid exposing keys in the frontend
               const options = {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session.access_token}`,
-                  // Use the anon key directly
-                  'apikey': supabaseAnonKey
+                  'Authorization': `Bearer ${session.access_token}`
                 },
                 body: JSON.stringify({
                   id: session.user.id,
                   email: session.user.email || '',
                   name: metadata.name || metadata.full_name || session.user.email?.split('@')[0] || 'User',
-                  // Use role from metadata or default to student
-                  role: metadata.role || 'student',
+                  role: metadata.role || 'student', // Default role
                   department: metadata.department || 'External',
                   status: 'pending',
                   last_active: new Date().toISOString(),
@@ -65,56 +59,28 @@ const AuthCallback: React.FC = () => {
                 })
               };
               
-              const supabaseUrl = 'https://ezbqycpminkkqasrvvij.supabase.co';
-              console.log('Sending request to:', `${supabaseUrl}/rest/v1/users`);
-              console.log('Options:', options);
-              
               // Send a request to directly insert the user using the REST API
-              const response = await fetch(`${supabaseUrl}/rest/v1/users`, options);
-              
+              const response = await fetch(`${window.location.origin}/rest/v1/users`, options);
               if (!response.ok) {
                 const errorData = await response.json();
-                console.error('Error response from API:', errorData);
                 throw new Error(`Failed to create user: ${JSON.stringify(errorData)}`);
-              } else {
-                const responseData = await response.json();
-                console.log('User record created successfully:', responseData);
-                
-                // Fetch the newly created user data to get the role
-                const { data: newUserData, error: newUserError } = await supabase
-                  .from('users')
-                  .select('role')
-                  .eq('id', session.user.id)
-                  .maybeSingle();
-                  
-                if (newUserError) {
-                  console.error('Error fetching newly created user:', newUserError);
-                } else {
-                  console.log('Fetched new user data:', newUserData);
-                  // Update userData with the new data
-                  userData = newUserData;
-                }
               }
             } catch (insertError: any) {
               console.error('Error creating user record:', insertError);
               throw insertError;
             }
           }
-        } else {
-          console.log('User already exists in database:', userData);
         }
         
         toast('Sign in successful', {
           description: 'You have been signed in successfully'
         });
         
-        console.log('Redirecting based on user role:', userData?.role);
         if (userData?.role === 'admin') {
           navigate('/admin');
         } else if (userData?.role === 'student') {
           navigate('/student');
         } else {
-          // Default route if no specific role is found
           navigate('/');
         }
       } catch (error: any) {
@@ -123,8 +89,6 @@ const AuthCallback: React.FC = () => {
           style: { backgroundColor: 'rgb(239 68 68)' }
         });
         navigate('/login');
-      } finally {
-        setIsLoading(false);
       }
     };
 

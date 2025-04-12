@@ -13,7 +13,6 @@ import Network from "./pages/admin/Network";
 import UserManagement from "./pages/admin/UserManagement";
 import SystemSettings from "./pages/admin/SystemSettings";
 import AiInsights from "./pages/admin/AiInsights";
-import CreateDummyUsers from "./pages/admin/CreateDummyUsers";
 import StudentPortal from "./pages/StudentPortal";
 import StudentVms from "./pages/student/StudentVms";
 import StudentResources from "./pages/student/StudentResources";
@@ -43,6 +42,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: JSX.Element, all
   const navigate = useNavigate();
   
   useEffect(() => {
+    // If we're not loading anymore and there's no user, redirect to login
     if (!loading && !user) {
       navigate('/login', { replace: true });
     }
@@ -60,6 +60,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: JSX.Element, all
     );
   }
   
+  // We'll handle redirect in the useEffect hook instead of here
   return children;
 };
 
@@ -142,14 +143,6 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <Profile />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/admin/create-dummy-users" 
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <CreateDummyUsers />
           </ProtectedRoute>
         } 
       />

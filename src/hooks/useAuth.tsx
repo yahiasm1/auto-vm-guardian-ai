@@ -1,42 +1,44 @@
-
-import { useState, useEffect, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { Session, User, Provider } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { AuthContext } from '@/context/AuthContext';
-import { authService } from '@/services/authService';
-import { useNotifications } from '@/hooks/useNotifications';
-import { AuthState } from '@/types/auth';
 
-// Hook to use auth context
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+interface AuthContextProps {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  signUp: (email: string, password: string, name: string, role: string, department: string) => Promise<void>;
+  signInWithOAuth: (provider: Provider) => Promise<void>;
+  supabaseConfigured: boolean;
+  notifications: Notification[];
+  markNotificationAsRead: (id: string) => Promise<void>;
+}
 
-// Auth provider component
+interface Notification {
+  id: string;
+  user_id: string;
+  message: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  read: boolean;
+  created_at: string;
+}
+
+const AuthContext = createContext<AuthContextProps | undefined>(undefined);
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    session: null,
-    loading: true,
-    supabaseConfigured: authService.checkSupabaseConfig(),
-    notifications: []
-  });
-  
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [supabaseConfigured, setSupabaseConfigured] = useState<boolean>(isSupabaseConfigured());
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const navigate = useNavigate();
-  const { 
-    notifications, 
-    fetchUserNotifications, 
-    markNotificationAsRead, 
-    clearNotifications 
-  } = useNotifications(authState.user?.id);
 
   useEffect(() => {
-    if (!authState.supabaseConfigured) {
-      setAuthState(prev => ({ ...prev, loading: false }));
+    if (!supabaseConfigured) {
+      setLoading(false);
       toast('Supabase configuration missing', {
         description: 'Please check your environment variables',
         style: { backgroundColor: 'rgb(239 68 68)' }
@@ -44,55 +46,99 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const { data: { subscription } } = authService.onAuthStateChange((newSession) => {
-      setAuthState(prev => ({
-        ...prev,
-        session: newSession,
-        user: newSession?.user ?? null,
-      }));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
       
       if (newSession?.user) {
         setTimeout(() => {
           fetchUserNotifications(newSession.user.id);
         }, 0);
       } else {
-        clearNotifications();
+        setNotifications([]);
       }
     });
 
-    authService.getSession().then(({ data: { session: existingSession } }) => {
-      setAuthState(prev => ({
-        ...prev,
-        session: existingSession,
-        user: existingSession?.user ?? null,
-        loading: false
-      }));
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      setSession(existingSession);
+      setUser(existingSession?.user ?? null);
+      setLoading(false);
       
       if (existingSession?.user) {
         fetchUserNotifications(existingSession.user.id);
       }
     }).catch(error => {
       console.error('Error getting session:', error);
-      setAuthState(prev => ({ ...prev, loading: false }));
+      setLoading(false);
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [authState.supabaseConfigured]);
-
-  // Update notifications in auth state when they change
-  useEffect(() => {
-    setAuthState(prev => ({ ...prev, notifications }));
-  }, [notifications]);
+  }, [supabaseConfigured]);
+  
+  const fetchUserNotifications = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+        
+      if (error) {
+        throw error;
+      }
+      
+      setNotifications(data || []);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+  
+  const markNotificationAsRead = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === id ? { ...notif, read: true } : notif
+        )
+      );
+      
+    } catch (error: any) {
+      toast('Failed to mark notification as read', {
+        description: error.message,
+        style: { backgroundColor: 'rgb(239 68 68)' }
+      });
+    }
+  };
 
   const signIn = async (email: string, password: string) => {
     try {
-      const data = await authService.signIn(email, password);
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        throw error;
+      }
       
       if (data.user) {
-        const userData = await authService.getUserRole(email);
-        console.log("Sign in successful, user role:", userData?.role);
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('role')
+          .eq('email', email)
+          .maybeSingle();
+          
+        if (userError) {
+          console.error('Error fetching user role:', userError);
+        }
         
         toast('Sign in successful', {
           description: 'You have been signed in successfully'
@@ -116,14 +162,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const signOut = async () => {
     try {
-      await authService.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
       
-      setAuthState(prev => ({ 
-        ...prev, 
-        user: null,
-        session: null
-      }));
-      clearNotifications();
+      setUser(null);
+      setSession(null);
+      setNotifications([]);
       
       toast('Sign out successful');
       navigate('/login');
@@ -137,13 +183,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const signUp = async (email: string, password: string, name: string, role: string, department: string) => {
     try {
-      console.log(`Starting signup with role: ${role}, department: ${department}`);
-      const data = await authService.signUp(email, password, name, role, department);
+      const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          data: {
+            name,
+            role,
+            department
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
       
       if (data.user) {
-        console.log('Auth signup successful, user:', data.user.id);
-        console.log('User metadata:', data.user.user_metadata);
-        
         toast('Sign up successful', {
           description: 'Please check your email for verification'
         });
@@ -157,9 +214,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const signInWithOAuth = async (provider: any) => {
+  const signInWithOAuth = async (provider: Provider) => {
     try {
-      await authService.signInWithOAuth(provider);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
     } catch (error: any) {
       toast('OAuth sign in failed', {
         description: error.message,
@@ -170,14 +237,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{ 
-      ...authState,
+      user, 
+      session, 
+      loading, 
       signIn, 
       signOut, 
       signUp,
       signInWithOAuth,
+      supabaseConfigured,
+      notifications,
       markNotificationAsRead
     }}>
       {children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
