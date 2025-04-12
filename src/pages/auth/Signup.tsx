@@ -41,6 +41,7 @@ const Signup: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validatePassword()) return;
+    console.log("Submitting signup form with role:", role, "and department:", department);
     await signUp(email, password, name, role, department);
   };
 

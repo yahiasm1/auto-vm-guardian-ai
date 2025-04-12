@@ -1,6 +1,5 @@
 
 import { useState, useEffect, useContext, ReactNode } from 'react';
-import { Session, User } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AuthContext } from '@/context/AuthContext';
@@ -93,6 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (data.user) {
         const userData = await authService.getUserRole(email);
+        console.log("Sign in successful, user role:", userData?.role);
         
         toast('Sign in successful', {
           description: 'You have been signed in successfully'
@@ -137,10 +137,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const signUp = async (email: string, password: string, name: string, role: string, department: string) => {
     try {
+      console.log(`Starting signup with role: ${role}, department: ${department}`);
       const data = await authService.signUp(email, password, name, role, department);
       
       if (data.user) {
         console.log('Auth signup successful, user:', data.user.id);
+        console.log('User metadata:', data.user.user_metadata);
+        
         toast('Sign up successful', {
           description: 'Please check your email for verification'
         });

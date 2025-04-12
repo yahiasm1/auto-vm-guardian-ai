@@ -41,6 +41,10 @@ export const authService = {
       throw error;
     }
     
+    // Log the results for debugging
+    console.log("Signup response:", data);
+    console.log("User metadata:", data.user?.user_metadata);
+    
     return data;
   },
   

@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAnonKey } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 const AuthCallback: React.FC = () => {
@@ -31,8 +31,8 @@ const AuthCallback: React.FC = () => {
           .eq('id', session.user.id)
           .maybeSingle();
           
-        if (userError) {
-          console.error('Error fetching user data:', userError);
+        if (userError || !userData) {
+          console.error('Error fetching user data or user not found:', userError);
           
           // If user doesn't exist in the users table yet, we need to create them
           if (session.user) {
@@ -49,14 +49,15 @@ const AuthCallback: React.FC = () => {
                 headers: {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${session.access_token}`,
-                  // We'll use the anon key directly rather than accessing it from the client
-                  'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6YnF5Y3BtaW5ra3Fhc3J2dmlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ0MDI5MzgsImV4cCI6MjA1OTk3ODkzOH0.wbCCHIaWwSTY2-mxCcgpUfCysZmaKIc6YbmBfRvIAic'
+                  // Use the anon key directly
+                  'apikey': supabaseAnonKey
                 },
                 body: JSON.stringify({
                   id: session.user.id,
                   email: session.user.email || '',
                   name: metadata.name || metadata.full_name || session.user.email?.split('@')[0] || 'User',
-                  role: metadata.role || 'student', // Default role
+                  // Use role from metadata or default to student
+                  role: metadata.role || 'student',
                   department: metadata.department || 'External',
                   status: 'pending',
                   last_active: new Date().toISOString(),
@@ -66,6 +67,7 @@ const AuthCallback: React.FC = () => {
               
               const supabaseUrl = 'https://ezbqycpminkkqasrvvij.supabase.co';
               console.log('Sending request to:', `${supabaseUrl}/rest/v1/users`);
+              console.log('Options:', options);
               
               // Send a request to directly insert the user using the REST API
               const response = await fetch(`${supabaseUrl}/rest/v1/users`, options);
@@ -89,7 +91,7 @@ const AuthCallback: React.FC = () => {
                   console.error('Error fetching newly created user:', newUserError);
                 } else {
                   console.log('Fetched new user data:', newUserData);
-                  // Update userData by reassigning to our let variable
+                  // Update userData with the new data
                   userData = newUserData;
                 }
               }
@@ -112,6 +114,7 @@ const AuthCallback: React.FC = () => {
         } else if (userData?.role === 'student') {
           navigate('/student');
         } else {
+          // Default route if no specific role is found
           navigate('/');
         }
       } catch (error: any) {
