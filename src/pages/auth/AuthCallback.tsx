@@ -35,8 +35,10 @@ const AuthCallback: React.FC = () => {
           
           // If user doesn't exist in the users table yet, we need to create them
           if (session.user) {
+            console.log('Creating user record for:', session.user.id);
             // Get metadata from the user's profile
             const metadata = session.user.user_metadata || {};
+            console.log('User metadata:', metadata);
             
             try {
               // Create a serverside client that bypasses RLS using service role key
@@ -45,7 +47,8 @@ const AuthCallback: React.FC = () => {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session.access_token}`
+                  'Authorization': `Bearer ${session.access_token}`,
+                  'apikey': supabase.supabaseKey
                 },
                 body: JSON.stringify({
                   id: session.user.id,
@@ -59,27 +62,49 @@ const AuthCallback: React.FC = () => {
                 })
               };
               
+              const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ezbqycpminkkqasrvvij.supabase.co';
+              console.log('Sending request to:', `${supabaseUrl}/rest/v1/users`);
+              
               // Send a request to directly insert the user using the REST API
-              const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL || 'https://ezbqycpminkkqasrvvij.supabase.co'}/rest/v1/users`, options);
+              const response = await fetch(`${supabaseUrl}/rest/v1/users`, options);
               
               if (!response.ok) {
                 const errorData = await response.json();
                 console.error('Error response from API:', errorData);
                 throw new Error(`Failed to create user: ${JSON.stringify(errorData)}`);
+              } else {
+                const responseData = await response.json();
+                console.log('User record created successfully:', responseData);
+                
+                // Fetch the newly created user data to get the role
+                const { data: newUserData, error: newUserError } = await supabase
+                  .from('users')
+                  .select('role')
+                  .eq('id', session.user.id)
+                  .maybeSingle();
+                  
+                if (newUserError) {
+                  console.error('Error fetching newly created user:', newUserError);
+                } else {
+                  console.log('Fetched new user data:', newUserData);
+                  // Update userData for redirect logic
+                  userData = newUserData;
+                }
               }
-              
-              console.log('User record created successfully');
             } catch (insertError: any) {
               console.error('Error creating user record:', insertError);
               throw insertError;
             }
           }
+        } else {
+          console.log('User already exists in database:', userData);
         }
         
         toast('Sign in successful', {
           description: 'You have been signed in successfully'
         });
         
+        console.log('Redirecting based on user role:', userData?.role);
         if (userData?.role === 'admin') {
           navigate('/admin');
         } else if (userData?.role === 'student') {
