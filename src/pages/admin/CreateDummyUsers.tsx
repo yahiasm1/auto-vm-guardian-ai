@@ -1,77 +1,62 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/Layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { authService } from '@/services/authService';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
-const CreateDummyUsers: React.FC = () => {
-  const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<any[]>([]);
-  const navigate = useNavigate();
-  
+const CreateDummyUsers = () => {
+  const [isCreating, setIsCreating] = useState(false);
+  const [results, setResults] = useState<any>(null);
+
   const handleCreateDummyUsers = async () => {
-    setLoading(true);
     try {
-      const result = await authService.createDummyAuthUsers();
-      setResults(result.results || []);
-      toast.success('Dummy auth users created');
+      setIsCreating(true);
+      const data = await authService.createDummyAuthUsers();
+      setResults(data);
+      toast.success('Dummy auth users created successfully');
     } catch (error: any) {
-      toast.error(`Error creating dummy users: ${error.message}`);
+      console.error('Failed to create dummy auth users:', error);
+      toast.error('Failed to create dummy auth users', {
+        description: error.message
+      });
     } finally {
-      setLoading(false);
+      setIsCreating(false);
     }
   };
 
   return (
-    <DashboardLayout>
-      <div className="container py-6">
-        <Card className="w-full">
+    <DashboardLayout title="Create Dummy Auth Users" userType="admin">
+      <div className="container mx-auto py-6">
+        <Card>
           <CardHeader>
-            <CardTitle>Create Dummy Auth Users</CardTitle>
+            <CardTitle>Create Authentication Users</CardTitle>
             <CardDescription>
-              This utility will create auth users for all the dummy data in the users table.
-              This allows you to sign in as these users with the default password.
+              This will create Supabase authentication accounts for all users in the database.
+              This is useful for setting up test accounts without having to manually create them.
             </CardDescription>
           </CardHeader>
-          
           <CardContent>
-            <Alert className="mb-4">
-              <AlertTitle>Important Information</AlertTitle>
-              <AlertDescription>
-                All dummy users will be created with the password: <strong>password123</strong>
-              </AlertDescription>
-            </Alert>
+            <p className="text-sm text-muted-foreground mb-4">
+              Each user will be created with the default password: <code>password123</code>
+            </p>
             
-            {results.length > 0 && (
-              <div className="mt-4 border rounded-md p-4">
+            {results && (
+              <div className="mt-4 p-4 bg-slate-100 rounded-md">
                 <h3 className="font-medium mb-2">Results:</h3>
-                <ul className="space-y-1">
-                  {results.map((result, index) => (
-                    <li key={index} className="flex items-center">
-                      <span className="mr-2">{result.email}:</span>
-                      <span className={result.status === 'error' ? 'text-red-500' : 
-                                      result.status === 'already_exists' ? 'text-yellow-500' : 'text-green-500'}>
-                        {result.status}
-                        {result.message ? ` - ${result.message}` : ''}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <pre className="text-xs overflow-auto max-h-60">
+                  {JSON.stringify(results, null, 2)}
+                </pre>
               </div>
             )}
           </CardContent>
-          
-          <CardFooter className="flex justify-between">
-            <Button variant="outline" onClick={() => navigate('/admin')}>
-              Back to Dashboard
-            </Button>
-            <Button onClick={handleCreateDummyUsers} disabled={loading}>
-              {loading ? 'Creating Users...' : 'Create Dummy Auth Users'}
+          <CardFooter>
+            <Button 
+              onClick={handleCreateDummyUsers}
+              disabled={isCreating}
+            >
+              {isCreating ? 'Creating Users...' : 'Create Auth Users'}
             </Button>
           </CardFooter>
         </Card>
