@@ -1,21 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Link, Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, AlertTriangle, Database, Github, Mail } from 'lucide-react';
+import { Eye, EyeOff, AlertTriangle, Database } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { verifyDatabaseTables } from '@/utils/supabaseDbVerifier';
-import { Separator } from '@/components/ui/separator';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn, signInWithOAuth, user, loading, supabaseConfigured } = useAuth();
+  const { signIn, user, loading, supabaseConfigured } = useAuth();
   const [databaseStatus, setDatabaseStatus] = useState<{
     checked: boolean;
     success: boolean;
@@ -52,10 +51,6 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await signIn(email, password);
-  };
-
-  const handleOAuthLogin = async (provider: 'github' | 'google') => {
-    await signInWithOAuth(provider);
   };
 
   return (
@@ -110,9 +105,9 @@ const Login: React.FC = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                <a href="#" className="text-xs text-primary hover:underline">
                   Forgot password?
-                </Link>
+                </a>
               </div>
               <div className="relative">
                 <Input
@@ -133,48 +128,8 @@ const Login: React.FC = () => {
               </div>
             </div>
             
-            <Button type="submit" className="w-full">Sign In with Email</Button>
-            
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-2">
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={() => handleOAuthLogin('github')}
-                className="flex items-center justify-center gap-2"
-              >
-                <Github size={16} />
-                GitHub
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={() => handleOAuthLogin('google')}
-                className="flex items-center justify-center gap-2"
-              >
-                <Mail size={16} />
-                Google
-              </Button>
-            </div>
+            <Button type="submit" className="w-full">Sign In</Button>
           </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <div className="text-center text-sm">
-              Don't have an account?{' '}
-              <Link to="/signup" className="text-primary hover:underline">
-                Sign up
-              </Link>
-            </div>
-          </CardFooter>
         </form>
       </Card>
     </div>
