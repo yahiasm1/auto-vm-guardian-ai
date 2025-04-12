@@ -8,6 +8,7 @@ export const authService = {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
     if (error) {
+      console.error("Authentication error:", error);
       throw error;
     }
     
@@ -15,11 +16,16 @@ export const authService = {
   },
   
   signOut: async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
+      return true;
+    } catch (error) {
+      console.error("Sign out error:", error);
       throw error;
     }
-    return true;
   },
   
   signUp: async (email: string, password: string, name: string, role: string, department: string) => {
@@ -38,6 +44,7 @@ export const authService = {
     });
     
     if (error) {
+      console.error("Signup error:", error);
       throw error;
     }
     
@@ -57,12 +64,18 @@ export const authService = {
     });
     
     if (error) {
+      console.error("OAuth sign in error:", error);
       throw error;
     }
   },
   
   getSession: async () => {
-    return await supabase.auth.getSession();
+    try {
+      return await supabase.auth.getSession();
+    } catch (error) {
+      console.error("Get session error:", error);
+      throw error;
+    }
   },
 
   checkSupabaseConfig: () => {
@@ -70,17 +83,23 @@ export const authService = {
   },
 
   getUserRole: async (email: string) => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('role')
-      .eq('email', email)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('role')
+        .eq('email', email)
+        .maybeSingle();
+        
+      if (error) {
+        console.error('Error fetching user role:', error);
+        throw error;
+      }
       
-    if (error) {
-      console.error('Error fetching user role:', error);
+      return data;
+    } catch (error) {
+      console.error('Error in getUserRole:', error);
+      throw error;
     }
-    
-    return data;
   },
 
   onAuthStateChange: (callback: (session: any) => void) => {

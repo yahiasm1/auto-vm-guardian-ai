@@ -15,6 +15,7 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const { signIn, signInWithOAuth, user, loading, supabaseConfigured } = useAuth();
   const location = useLocation();
   const isAdminPortal = location.pathname === '/login' || location.pathname.startsWith('/admin');
@@ -54,11 +55,21 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signIn(email, password);
+    setLoginError(null); // Reset any previous errors
+    
+    try {
+      await signIn(email, password);
+    } catch (error: any) {
+      setLoginError(error.message || 'Failed to sign in. Please check your credentials.');
+    }
   };
 
   const handleOAuthLogin = async (provider: 'github' | 'google') => {
-    await signInWithOAuth(provider);
+    try {
+      await signInWithOAuth(provider);
+    } catch (error: any) {
+      setLoginError(error.message || `Failed to sign in with ${provider}.`);
+    }
   };
 
   return (
@@ -93,6 +104,16 @@ const Login: React.FC = () => {
                 The following tables are missing from the database: {databaseStatus.missingTables.join(', ')}.
                 Please run the schema.sql script in the Supabase SQL editor.
               </AlertDescription>
+            </Alert>
+          </div>
+        )}
+        
+        {loginError && (
+          <div className="px-6">
+            <Alert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Authentication Error</AlertTitle>
+              <AlertDescription>{loginError}</AlertDescription>
             </Alert>
           </div>
         )}
