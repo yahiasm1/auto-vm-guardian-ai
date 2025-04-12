@@ -87,5 +87,21 @@ export const authService = {
     return supabase.auth.onAuthStateChange((_event, session) => {
       callback(session);
     });
+  },
+  
+  // New function to create users for the dummy data
+  createDummyAuthUsers: async () => {
+    // NOTE: This function will need to be called from an edge function
+    // as it requires the service role key
+    try {
+      const { data: result } = await supabase.functions.invoke('create-dummy-users', {
+        method: 'POST'
+      });
+      
+      return result;
+    } catch (error: any) {
+      console.error('Error creating dummy auth users:', error);
+      throw error;
+    }
   }
 };

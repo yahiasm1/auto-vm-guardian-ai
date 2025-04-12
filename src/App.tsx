@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,7 +41,6 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: JSX.Element, all
   const navigate = useNavigate();
   
   useEffect(() => {
-    // If we're not loading anymore and there's no user, redirect to login
     if (!loading && !user) {
       navigate('/login', { replace: true });
     }
@@ -60,7 +58,6 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: JSX.Element, all
     );
   }
   
-  // We'll handle redirect in the useEffect hook instead of here
   return children;
 };
 
@@ -143,6 +140,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <Profile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/create-dummy-users" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <CreateDummyUsers />
           </ProtectedRoute>
         } 
       />
