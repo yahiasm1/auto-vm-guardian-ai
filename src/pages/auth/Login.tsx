@@ -19,6 +19,7 @@ const Login: React.FC = () => {
   const { signIn, signInWithOAuth, user, loading, supabaseConfigured } = useAuth();
   const location = useLocation();
   const isAdminPortal = location.pathname === '/login' || location.pathname.startsWith('/admin');
+  const isStudentPortal = location.pathname.startsWith('/student');
   
   const [databaseStatus, setDatabaseStatus] = useState<{
     checked: boolean;

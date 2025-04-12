@@ -22,7 +22,7 @@ const Signup: React.FC = () => {
 
   // If already logged in, redirect
   if (!loading && user) {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to="/student" replace />;
   }
 
   const validatePassword = () => {
@@ -41,8 +41,10 @@ const Signup: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validatePassword()) return;
-    console.log("Submitting signup form with role:", role, "and department:", department);
-    await signUp(email, password, name, role, department);
+    
+    // Always set role to student for the signup page
+    console.log("Submitting signup form with role: student, department:", department);
+    await signUp(email, password, name, 'student', department);
   };
 
   return (
@@ -141,7 +143,7 @@ const Signup: React.FC = () => {
             <Button type="submit" className="w-full">Sign Up as Student</Button>
             <div className="text-center text-sm">
               Already have an account?{' '}
-              <Link to="/login" className="text-primary hover:underline">
+              <Link to="/student" className="text-primary hover:underline">
                 Sign in
               </Link>
             </div>
