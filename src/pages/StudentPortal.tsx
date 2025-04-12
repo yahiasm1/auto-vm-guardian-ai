@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/Layout/DashboardLayout';
 import { VmCard, VMStatus } from '@/components/Dashboard/VmCard';
@@ -122,36 +121,6 @@ const StudentPortal: React.FC = () => {
       }
     }
   });
-  
-  // Seed initial data if nothing exists yet
-  useEffect(() => {
-    if (user?.id && studentVMs.length === 0 && !isLoadingVMs && !vmError) {
-      const seedInitialData = async () => {
-        try {
-          const { error } = await supabase.functions.invoke('vm-management', {
-            body: { 
-              action: 'seed_initial_data',
-              userId: user.id
-            },
-            method: 'POST'
-          });
-          
-          if (error) throw error;
-          
-          // Refetch all data
-          refetchVMs();
-          refetchMaterials();
-          refetchAssignments();
-          
-          toast.success('Initial data loaded successfully');
-        } catch (error) {
-          console.error('Error seeding initial data:', error);
-        }
-      };
-      
-      seedInitialData();
-    }
-  }, [user?.id, studentVMs.length, isLoadingVMs, vmError, refetchVMs, refetchMaterials, refetchAssignments]);
   
   const handleMaterialClick = (material: CourseMaterial) => {
     toast(`Opening material: ${material.title}`);

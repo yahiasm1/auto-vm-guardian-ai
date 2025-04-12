@@ -46,30 +46,6 @@ const StudentVms: React.FC = () => {
   const [selectedVM, setSelectedVM] = useState<string | null>(null);
   const [resourcesTab, setResourcesTab] = useState<string>('usage');
   const [showConsole, setShowConsole] = useState<boolean>(false);
-  const [isSeeding, setIsSeeding] = useState<boolean>(false);
-
-  const seedInitialData = async () => {
-    if (!user?.id) return;
-    
-    setIsSeeding(true);
-    try {
-      await supabase.functions.invoke('vm-management', {
-        body: { 
-          action: 'seed_initial_data',
-          userId: user.id
-        },
-        method: 'POST'
-      });
-      
-      toast.success('Sample data has been added to your account');
-      refetch();
-    } catch (error) {
-      console.error('Error seeding data:', error);
-      toast.error('Failed to seed initial data');
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   const {
     data: studentVMs = [],
@@ -150,15 +126,6 @@ const StudentVms: React.FC = () => {
           </div>
           
           <div className="flex gap-2">
-            {typedVMs.length === 0 && !isLoading && (
-              <Button 
-                onClick={seedInitialData} 
-                disabled={isSeeding}
-                className="flex items-center gap-2"
-              >
-                {isSeeding ? 'Adding Sample Data...' : 'Add Sample VMs'}
-              </Button>
-            )}
             <Button 
               variant="outline" 
               onClick={() => refetch()} 
@@ -247,15 +214,6 @@ const StudentVms: React.FC = () => {
                         ? 'No virtual machines match your filters.' 
                         : 'You don\'t have any virtual machines yet.'}
                     </p>
-                    
-                    {!search && statusFilter === 'all' && (
-                      <Button 
-                        onClick={seedInitialData} 
-                        disabled={isSeeding}
-                      >
-                        {isSeeding ? 'Adding Sample Data...' : 'Add Sample VMs'}
-                      </Button>
-                    )}
                   </div>
                 )}
               </div>
