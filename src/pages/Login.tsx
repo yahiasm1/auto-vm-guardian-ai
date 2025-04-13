@@ -91,51 +91,39 @@ const Login = () => {
       
       console.log(`Creating test ${role} account:`, email);
       
-      // Check if the user already exists by attempting a sign-in (with error handling suppressed)
-      const { data: signInCheck, error: signInError } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password 
-      }).catch(() => ({ data: null, error: null }));
-      
-      // If we can sign in successfully, the user exists
-      if (signInCheck?.user) {
-        console.log(`User ${email} already exists, no need to create`);
-        toast.success(`Test ${role} account already exists! You can now sign in.`);
-        setAccountCreated(email);
-        // Pre-fill the form with these credentials
-        form.setValue('email', email);
-        form.setValue('password', password);
+      try {
+        // Attempt to sign up - if the user exists, it will throw an error
+        const result = await signUp(email, password, fullName, role, role === 'admin' ? 'Administration' : 'Computer Science');
         
-        // Sign out again since we were just checking existence
-        await supabase.auth.signOut();
-        return;
-      }
-      
-      const result = await signUp(email, password, fullName, role, role === 'admin' ? 'Administration' : 'Computer Science');
-      
-      if (result && result.user) {
-        console.log(`Test ${role} account created successfully:`, result.user);
-        toast.success(`Test ${role} account created successfully! You can now sign in.`);
-        setAccountCreated(email);
-        // Pre-fill the form with these credentials
-        form.setValue('email', email);
-        form.setValue('password', password);
-      } else {
-        console.log(`Failed to create test ${role} account`);
-        toast.error(`Failed to create test ${role} account`);
+        if (result && result.user) {
+          console.log(`Test ${role} account created successfully:`, result.user);
+          toast.success(`Test ${role} account created successfully! You can now sign in.`);
+          setAccountCreated(email);
+          // Pre-fill the form with these credentials
+          form.setValue('email', email);
+          form.setValue('password', password);
+        }
+      } catch (error: any) {
+        console.log("Error during signup:", error);
+        
+        // If the error indicates the user already exists
+        if (error.message?.includes("already registered") || 
+            error.message?.includes("duplicate key") || 
+            error.message?.includes("Database error saving")) {
+          // The user already exists, inform the user and pre-fill the form
+          console.log(`User ${email} already exists`);
+          toast.success(`Test ${role} account already exists! You can now sign in.`);
+          setAccountCreated(email);
+          form.setValue('email', email);
+          form.setValue('password', password);
+        } else {
+          // It's a different error, rethrow it
+          throw error;
+        }
       }
     } catch (error: any) {
       console.error(`Error creating test ${role} account:`, error);
-      if (error.message?.includes("already registered")) {
-        toast.success(`Test ${role} account already exists! You can now sign in.`);
-        const email = role === 'admin' ? 'admin@example.com' : 'student@example.com';
-        const password = role === 'admin' ? 'admin123' : 'student123';
-        form.setValue('email', email);
-        form.setValue('password', password);
-        setAccountCreated(email);
-      } else {
-        setErrorMessage(`Failed to create test ${role} account: ${error.message}`);
-      }
+      setErrorMessage(`Failed to create test ${role} account: ${error.message}`);
     } finally {
       setIsLoading(false);
     }

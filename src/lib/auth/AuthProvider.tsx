@@ -109,6 +109,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       console.log('Signing up user:', { email, fullName, role });
       
+      // First check if the user already exists by trying to sign in
+      const { data: existingData, error: existingError } = await supabase.auth.signInWithPassword({
+        email, 
+        password
+      }).catch(() => ({ data: null, error: { message: 'Not found' } }));
+      
+      if (existingData?.user) {
+        // If login successful, the user already exists
+        console.log('User already exists:', email);
+        
+        // Sign out again to allow proper login flow
+        await supabase.auth.signOut();
+        
+        // Return the user data to indicate success
+        return { user: existingData.user, session: null };
+      }
+      
+      // If we get here, user doesn't exist or wrong password, proceed with signup
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -129,12 +147,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('Registration data returned:', data);
 
       // Create profile record for the new user
-      // The Supabase trigger should handle this automatically, but we'll add the profile creation
-      // here to ensure it works even if the trigger fails
       if (data.user && data.user.id) {
         console.log('Creating profile for:', data.user.id);
-        // Note: This will only succeed if the user has proper permissions or if RLS is disabled
-        // A more robust approach would be to use an edge function for this
         try {
           const { data: profileData, error: profileError } = await supabase.from('profiles').upsert({
             id: data.user.id,
@@ -152,8 +166,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.log('Profile created successfully:', profileData);
           }
         } catch (profileError) {
-          // We'll just log this error since it might be due to permissions
-          // and the Supabase trigger should handle profile creation anyway
           console.error('Exception creating profile:', profileError);
         }
       }
@@ -162,6 +174,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return data;
     } catch (error: any) {
       console.error('Registration error:', error);
+      
+      // Check for specific error indicating the user already exists
+      if (error.message && (
+          error.message.includes("already registered") || 
+          error.message.includes("duplicate key") ||
+          error.message.includes("Database error saving"))) {
+        throw new Error("Email already registered. Please sign in instead.");
+      }
+      
       const message = error.message || 'Failed to register';
       toast.error(message);
       throw new Error(message);
