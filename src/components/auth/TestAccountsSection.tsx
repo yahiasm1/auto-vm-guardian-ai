@@ -47,6 +47,26 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
     }
   };
 
+  const loginWithTestAccount = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+      console.log(`Trying to sign in with ${email}`);
+      
+      await signIn(email, password);
+      
+      toast.success(`Signed in as ${email}`);
+      return true;
+    } catch (error: any) {
+      console.error(`Login error with ${email}:`, error);
+      if (error.message.includes("Invalid login credentials")) {
+        return false;
+      }
+      setErrorMessage(`Could not sign in: ${error.message}`);
+      return false;
+    }
+  }
+
   const createTestAccount = async (role: 'admin' | 'student') => {
     try {
       setIsLoading(true);
@@ -58,9 +78,17 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
       const fullName = role === 'admin' ? 'Admin Test User' : 'Student Test User';
       const department = role === 'admin' ? 'Administration' : 'Computer Science';
       
-      console.log(`Creating test ${role} account:`, email);
+      console.log(`Creating/logging in test ${role} account: ${email}`);
       
-      // Create a new account
+      // First try to login - if the account exists, this should work
+      const loginSuccess = await loginWithTestAccount(email, password);
+      
+      if (loginSuccess) {
+        // User successfully logged in, no need to create an account
+        return;
+      }
+      
+      // If login failed, try to create a new account
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -75,20 +103,10 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
       
       if (error) {
         if (error.message.includes("User already registered")) {
-          // User exists, try to sign in
-          toast.info(`${role} account already exists, attempting to sign in...`);
-          
-          try {
-            await signIn(email, password);
-            toast.success(`Signed in as ${email}`);
-            return;
-          } catch (signInError: any) {
-            setErrorMessage(`User ${email} exists but could not sign in: ${signInError.message}`);
-            return;
-          }
-        } else {
-          throw error;
+          setErrorMessage(`Account ${email} exists but password may be different. Try the reset password option.`);
+          return;
         }
+        throw error;
       } else if (data.user) {
         console.log(`Test ${role} account created successfully:`, data.user);
         toast.success(`Test ${role} account created! You can now sign in.`);

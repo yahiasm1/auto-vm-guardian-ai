@@ -4,7 +4,6 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth';
 
@@ -49,7 +48,7 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       setErrorMessage(null);
       console.log("Attempting login with:", values.email);
       
-      // Use the auth context's signIn method instead of direct supabase call
+      // Use the auth context's signIn method
       await signIn(values.email, values.password);
       
       console.log("Login successful");
@@ -65,6 +64,10 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
         // Check for common Supabase errors
         if (errorMsg.includes('Invalid login credentials')) {
           errorMsg = 'Invalid email or password. Please try again or create an account if you don\'t have one.';
+        } else if (errorMsg.includes('Email not confirmed')) {
+          errorMsg = 'Email not confirmed. Please check your email for a confirmation link.';
+        } else if (errorMsg.includes('rate limit')) {
+          errorMsg = 'Too many login attempts. Please try again later.';
         }
       }
       
