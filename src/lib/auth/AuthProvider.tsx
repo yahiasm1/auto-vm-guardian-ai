@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -109,16 +108,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       console.log('Signing up user:', { email, fullName, role });
       
-      // First check if the user already exists without trying to sign in
-      const { data: userCheck, error: userCheckError } = await supabase.auth.admin.listUsers({
-        filter: {
-          email: email
+      // We'll use a different approach that's compatible with the client SDK
+      // First try to check if email exists using signInWithOtp (doesn't send email in check mode)
+      const { data: emailCheck, error: emailCheckError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false, // Just check if user exists, don't create
         }
-      }).catch(() => ({ data: null, error: null }));
+      });
       
-      // If we can find the user, they already exist
-      if (userCheck && userCheck.users && userCheck.users.length > 0) {
-        console.log('User already exists:', email);
+      // If we don't get an error related to non-existent user, the user likely exists
+      if (!emailCheckError || (emailCheckError.message && !emailCheckError.message.toLowerCase().includes("user not found"))) {
+        console.log('User likely exists:', email);
         
         // Sign out in case we're somehow signed in
         await supabase.auth.signOut();

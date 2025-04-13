@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -43,7 +42,6 @@ const Login = () => {
     },
   });
 
-  // Redirect if already logged in
   useEffect(() => {
     if (user && profile) {
       console.log("User authenticated, redirecting:", { user: user.email, role: profile.role });
@@ -59,7 +57,6 @@ const Login = () => {
       setErrorMessage(null);
       console.log("Attempting login with:", values.email);
       await signIn(values.email, values.password);
-      // Redirection will be handled by the useEffect
     } catch (error: any) {
       console.error('Login error:', error);
       setErrorMessage(error.message || 'Failed to login. Please check your credentials and try again.');
@@ -68,7 +65,6 @@ const Login = () => {
     }
   };
 
-  // For testing purposes: pre-fill with test credentials
   const fillTestCredentials = (role: 'admin' | 'student') => {
     if (role === 'admin') {
       form.setValue('email', 'admin@example.com');
@@ -79,7 +75,6 @@ const Login = () => {
     }
   };
 
-  // Helper function to create a test account
   const createTestAccount = async (role: 'admin' | 'student') => {
     try {
       setIsLoading(true);
@@ -92,7 +87,6 @@ const Login = () => {
       
       console.log(`Creating test ${role} account:`, email);
       
-      // First check if user exists by attempting to sign in
       try {
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
@@ -100,51 +94,45 @@ const Login = () => {
         });
         
         if (signInData?.user) {
-          // User exists and password is correct
           console.log(`User ${email} already exists and password is correct`);
           toast.success(`Test ${role} account exists! Signing you in...`);
           setAccountCreated(email);
           
-          // Pre-fill the form with credentials
           form.setValue('email', email);
           form.setValue('password', password);
           
-          // Attempt to sign in properly through our auth handler
           await signIn(email, password);
           return;
         }
       } catch (signInError) {
-        // Either user doesn't exist or password is wrong
         console.log("Sign in check result:", signInError);
       }
       
-      // Try to create the account
       try {
         const result = await signUp(email, password, fullName, role, department);
         
         if (result && result.user) {
           console.log(`Test ${role} account created successfully:`, result.user);
-          toast.success(`Test ${role} account created successfully! You can now sign in.`);
+          toast.success(`Test ${role} account created! You can now sign in.`);
           setAccountCreated(email);
           
-          // Pre-fill the form with these credentials
           form.setValue('email', email);
           form.setValue('password', password);
         }
       } catch (error: any) {
         console.log("Error during signup:", error);
         
-        // If the error indicates the user already exists
         if (error.message?.includes("already registered") || 
             error.message?.includes("duplicate key") || 
-            error.message?.includes("Database error saving")) {
+            error.message?.includes("Database error saving") ||
+            error.message?.includes("Email already registered")) {
           
           console.log(`User ${email} seems to exist but with different password`);
-          toast.info(`User ${email} already exists but may have a different password. Try a new password.`);
+          toast.info(`User ${email} already exists but may have a different password. Try signing in.`);
           setAccountCreated(email);
           form.setValue('email', email);
+          form.setValue('password', password);
         } else {
-          // It's a different error, rethrow it
           throw error;
         }
       }
