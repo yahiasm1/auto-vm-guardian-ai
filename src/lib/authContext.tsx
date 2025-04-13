@@ -8,7 +8,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'instructor' | 'student' | 'guest';
+  role: 'admin' | 'instructor' | 'student';
   department: string;
   status: 'active' | 'inactive' | 'suspended' | 'pending';
   last_active: string;
