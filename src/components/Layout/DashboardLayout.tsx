@@ -1,9 +1,12 @@
 
 import React from 'react';
 import { Sidebar } from '../Navigation/Sidebar';
-import { User, BellRing, Menu } from 'lucide-react';
+import { useAuth } from '@/lib/authContext';
+import { useNavigate } from 'react-router-dom';
+import { User, BellRing, Menu, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -17,6 +20,19 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   userType 
 }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Logged out successfully');
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to log out');
+    }
+  };
   
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
@@ -51,7 +67,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <Button variant="ghost" size="icon">
                 <BellRing size={20} />
               </Button>
-              <Button variant="ghost" size="icon">
+              <div className="hidden md:flex items-center space-x-2">
+                <span className="text-sm font-medium">{user?.name || 'User'}</span>
+                <Button variant="ghost" size="icon" onClick={handleLogout} title="Log out">
+                  <LogOut size={18} />
+                </Button>
+              </div>
+              <Button variant="ghost" size="icon" className="md:hidden">
                 <User size={20} />
               </Button>
             </div>

@@ -1,7 +1,8 @@
 
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/authContext';
 import { 
   Home, 
   Server, 
@@ -13,8 +14,11 @@ import {
   Activity,
   BookOpen,
   FileText,
-  HelpCircle
+  HelpCircle,
+  LogOut
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface SidebarProps {
   userType: 'admin' | 'student';
@@ -22,6 +26,8 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   
   // Define navigation items based on user type
   const adminNavItems = [
@@ -45,6 +51,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
   ];
   
   const navItems = userType === 'admin' ? adminNavItems : studentNavItems;
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Logged out successfully');
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to log out');
+    }
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -80,20 +97,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
 
       {/* User Info */}
       <div className="p-4 border-t border-slate-200 dark:border-slate-700">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className="w-8 h-8 rounded-full bg-vmSystem-blue flex items-center justify-center text-white">
-              {userType === 'admin' ? 'A' : 'S'}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-vmSystem-blue flex items-center justify-center text-white">
+                {user?.name?.charAt(0) || (userType === 'admin' ? 'A' : 'S')}
+              </div>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                {user?.name || (userType === 'admin' ? 'Admin User' : 'Student User')}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {user?.department || (userType === 'admin' ? 'System Administrator' : 'Computer Science')}
+              </p>
             </div>
           </div>
-          <div className="ml-3">
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-              {userType === 'admin' ? 'Admin User' : 'Student User'}
-            </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {userType === 'admin' ? 'System Administrator' : 'Computer Science'}
-            </p>
-          </div>
+          <Button variant="ghost" size="sm" onClick={handleLogout} title="Log out">
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>
