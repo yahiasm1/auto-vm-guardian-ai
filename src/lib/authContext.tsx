@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { authApi } from '@/services/api';
 import { toast } from 'sonner';
 
 // Define user types
@@ -101,23 +102,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Sign in function
+  // Sign in function - try both Supabase and API auth
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
       console.log('Attempting login with:', { email });
       
+      // First try Supabase authentication
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        throw error;
+        // If Supabase auth fails, try the API
+        try {
+          const response = await authApi.login(email, password);
+          
+          // Store the token from the API
+          if (response.data.accessToken) {
+            localStorage.setItem('accessToken', response.data.accessToken);
+            
+            // Try to get user profile from API
+            try {
+              const userResponse = await authApi.getMe();
+              setUser(userResponse.data as unknown as User);
+              setProfile(userResponse.data as unknown as Profile);
+              toast.success('Login successful via API');
+              return;
+            } catch (profileError) {
+              console.error('Error fetching user profile from API:', profileError);
+              throw new Error('Failed to fetch user profile');
+            }
+          }
+        } catch (apiError: any) {
+          console.error('API login error:', apiError);
+          throw error; // Throw the original Supabase error if API fails too
+        }
+      } else {
+        console.log('Login successful:', data.user?.email);
+        toast.success('Login successful via Supabase');
+        return;
       }
-
-      console.log('Login successful:', data.user?.email);
-      return;
     } catch (error: any) {
       console.error('Login error:', error);
       
@@ -138,7 +164,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       setLoading(true);
+      
+      // First try Supabase signout
       const { error } = await supabase.auth.signOut();
+      
+      // Also sign out from the API
+      try {
+        await authApi.logout();
+      } catch (apiError) {
+        console.error('API logout error:', apiError);
+      }
+      
+      // Clear local storage
+      localStorage.removeItem('accessToken');
+      
       if (error) {
         throw error;
       }
