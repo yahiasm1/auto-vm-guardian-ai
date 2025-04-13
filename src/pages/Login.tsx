@@ -57,10 +57,48 @@ const Login = () => {
       setIsLoading(true);
       setErrorMessage(null);
       console.log("Attempting login with:", values.email);
-      await signIn(values.email, values.password);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
+      
+      if (error) {
+        console.error("Supabase auth error:", error);
+        throw error;
+      }
+      
+      console.log("Login successful:", data);
+      toast.success('Login successful');
     } catch (error: any) {
       console.error('Login error:', error);
-      setErrorMessage(error.message || 'Failed to login. Please check your credentials and try again.');
+      
+      // Check if there's a profile for this user
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user?.id) {
+          const { data: profileData } = await supabase.from('profiles').select('*').eq('id', userData.user.id).single();
+          console.log("Profile check:", profileData);
+          if (!profileData) {
+            setErrorMessage('Your account exists but has no profile. Please contact an administrator.');
+            return;
+          }
+        }
+      } catch (profileError) {
+        console.error("Profile check error:", profileError);
+      }
+      
+      let errorMsg = 'Failed to login. Please check your credentials and try again.';
+      if (error.message) {
+        errorMsg = error.message;
+        
+        // Check for common Supabase errors
+        if (errorMsg.includes('Invalid login credentials')) {
+          errorMsg = 'Invalid email or password. Please try again.';
+        }
+      }
+      
+      setErrorMessage(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -73,6 +111,30 @@ const Login = () => {
     
     form.setValue('email', email);
     form.setValue('password', password);
+  };
+
+  const resetPassword = async (role: 'admin' | 'student') => {
+    try {
+      const email = role === 'admin' ? 'admin@example.com' : 'student@example.com';
+      
+      setIsLoading(true);
+      setErrorMessage(null);
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/reset-password',
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      toast.success(`Password reset email sent to ${email}`);
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      setErrorMessage(`Failed to send password reset: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const createTestAccount = async (role: 'admin' | 'student') => {
@@ -90,7 +152,15 @@ const Login = () => {
       
       // First try to sign in with existing account
       try {
-        await signIn(email, password);
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        
+        if (error) {
+          throw error;
+        }
+        
         toast.success(`Signed in with existing ${role} account`);
         return;
       } catch (signInError: any) {
@@ -111,7 +181,8 @@ const Login = () => {
         
         if (error) {
           if (error.message.includes("User already registered")) {
-            toast.error(`User ${email} already exists but password may be different. Please contact an administrator.`);
+            setErrorMessage(`User ${email} exists but with a different password. Try the reset password button.`);
+            toast.error(`User ${email} already exists but password may be different.`);
           } else {
             throw error;
           }
@@ -221,7 +292,7 @@ const Login = () => {
                 onClick={() => createTestAccount('admin')}
                 disabled={isLoading}
               >
-                Create/Login Admin
+                Login/Create Admin
               </Button>
               <Button 
                 variant="secondary" 
@@ -230,7 +301,27 @@ const Login = () => {
                 onClick={() => createTestAccount('student')}
                 disabled={isLoading}
               >
-                Create/Login Student
+                Login/Create Student
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full" 
+                onClick={() => resetPassword('admin')}
+                disabled={isLoading}
+              >
+                Reset Admin Pass
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full" 
+                onClick={() => resetPassword('student')}
+                disabled={isLoading}
+              >
+                Reset Student Pass
               </Button>
             </div>
           </div>
