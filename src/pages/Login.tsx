@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -29,7 +28,7 @@ type FormValues = z.infer<typeof formSchema>;
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { signIn, user, profile } = useAuth();
+  const { signIn, user, profile, signUp } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -82,8 +81,6 @@ const Login = () => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
-      
-      const { signUp } = useAuth();
       
       const email = role === 'admin' ? 'admin@example.com' : 'student@example.com';
       const password = role === 'admin' ? 'admin123' : 'student123';

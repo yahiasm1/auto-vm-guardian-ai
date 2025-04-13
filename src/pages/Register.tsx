@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -72,15 +71,19 @@ const Register = () => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
-      await signUp(
+      
+      const result = await signUp(
         values.email,
         values.password,
         values.fullName,
         values.role,
         values.department || ''
       );
-      toast.success('Registration successful! Please check your email to confirm your account.');
-      navigate('/login');
+      
+      if (result && result.user) {
+        toast.success('Registration successful! Please check your email to confirm your account.');
+        navigate('/login');
+      }
     } catch (error: any) {
       console.error('Registration error:', error);
       setErrorMessage(error.message || 'Failed to register');

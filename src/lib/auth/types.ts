@@ -21,6 +21,6 @@ export interface AuthContextProps {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  signUp: (email: string, password: string, fullName: string, role: string, department: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, role: string, department: string) => Promise<{ user: User | null; session: Session | null; } | null>;
   signInWithOAuth: (provider: string) => Promise<void>;
 }
