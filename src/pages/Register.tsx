@@ -36,7 +36,7 @@ const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
-  role: z.enum(['admin', 'instructor', 'student'], {
+  role: z.enum(['instructor', 'student'], {
     required_error: 'Please select a role',
   }),
   department: z.string().optional(),
@@ -146,7 +146,6 @@ const Register = () => {
                       <SelectContent>
                         <SelectItem value="student">Student</SelectItem>
                         <SelectItem value="instructor">Instructor</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

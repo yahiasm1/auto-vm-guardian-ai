@@ -36,6 +36,10 @@ function initDatabase() {
       )
     `);
 
+    const bcrypt = require('bcryptjs');
+    const { v4: uuidv4 } = require('uuid');
+    const salt = bcrypt.genSaltSync(10);
+    
     // Check if admin user exists, if not create default one
     db.get("SELECT * FROM users WHERE email = 'admin@example.com'", (err, row) => {
       if (err) {
@@ -44,10 +48,6 @@ function initDatabase() {
       }
       
       if (!row) {
-        const bcrypt = require('bcryptjs');
-        const { v4: uuidv4 } = require('uuid');
-        
-        const salt = bcrypt.genSaltSync(10);
         const hashedPassword = bcrypt.hashSync('admin123', salt);
         const adminId = uuidv4();
         
@@ -60,6 +60,31 @@ function initDatabase() {
               return;
             }
             console.log("Default admin user created successfully");
+          }
+        );
+      }
+    });
+    
+    // Check if student user exists, if not create default one
+    db.get("SELECT * FROM users WHERE email = 'student@example.com'", (err, row) => {
+      if (err) {
+        console.error("Error checking for student user:", err);
+        return;
+      }
+      
+      if (!row) {
+        const hashedPassword = bcrypt.hashSync('student123', salt);
+        const studentId = uuidv4();
+        
+        db.run(
+          "INSERT INTO users (id, email, password, name, role, department, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          [studentId, 'student@example.com', hashedPassword, 'Student User', 'student', 'Computer Science', 'active'],
+          function(err) {
+            if (err) {
+              console.error("Error creating student user:", err);
+              return;
+            }
+            console.log("Default student user created successfully");
           }
         );
       }
