@@ -1,8 +1,8 @@
 
 import axios from 'axios';
 
-// Use relative URL or environment variable for API
-const API_URL = '/api';
+// Set the API URL based on environment
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Create axios instance
 const api = axios.create({
@@ -30,6 +30,14 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    
+    if (error.response) {
+      console.log('API Error Response:', error.response.status, error.response.data);
+    } else if (error.request) {
+      console.log('API Request Error:', error.request);
+    } else {
+      console.log('API Error:', error.message);
+    }
     
     // If error is 401 and not already retrying
     if (error.response?.status === 401 && !originalRequest._retry) {

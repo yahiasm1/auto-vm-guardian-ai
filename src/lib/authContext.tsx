@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi } from '@/services/api';
 import { toast } from 'sonner';
@@ -57,7 +56,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
+      console.log('Attempting login with:', { email });
+      
       const response = await authApi.login(email, password);
+      console.log('Login response:', response.data);
+      
       const { user, accessToken } = response.data;
       
       setUser(user);
@@ -66,9 +69,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     } catch (error: any) {
       console.error('Login error:', error);
-      const message = error.response?.data?.error || 'Failed to sign in';
-      toast.error(message);
-      throw new Error(message);
+      
+      let errorMessage = 'Failed to sign in';
+      
+      // Handle different types of errors
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        errorMessage = error.response.data?.error || `Server error: ${error.response.status}`;
+      } else if (error.request) {
+        // The request was made but no response was received
+        errorMessage = 'No response from server. Please check your connection.';
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        errorMessage = error.message || 'An unexpected error occurred';
+      }
+      
+      toast.error(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
