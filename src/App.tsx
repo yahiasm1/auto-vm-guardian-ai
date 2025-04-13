@@ -1,67 +1,62 @@
 
-import { Routes, Route } from 'react-router-dom';
-import { Toaster } from 'sonner';
-import { ThemeProvider } from '@/components/ui/theme-provider';
-import { AuthProvider } from '@/lib/mockAuth';
-import Login from '@/pages/auth/Login';
-import Signup from '@/pages/auth/Signup';
-import AuthCallback from '@/pages/auth/AuthCallback';
-import AdminDashboard from '@/pages/AdminDashboard';
-import StudentPortal from '@/pages/StudentPortal';
-import NotFound from '@/pages/NotFound';
-import Profile from '@/pages/user/Profile';
-import ProtectedRoute from '@/components/Auth/ProtectedRoute';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Index from "./pages/Index";
+import AdminDashboard from "./pages/AdminDashboard";
+import VmManagement from "./pages/admin/VmManagement";
+import ResourceAllocation from "./pages/admin/ResourceAllocation";
+import Storage from "./pages/admin/Storage";
+import Network from "./pages/admin/Network";
+import UserManagement from "./pages/admin/UserManagement";
+import SystemSettings from "./pages/admin/SystemSettings";
+import AiInsights from "./pages/admin/AiInsights";
+import StudentPortal from "./pages/StudentPortal";
+import StudentVms from "./pages/student/StudentVms";
+import StudentResources from "./pages/student/StudentResources";
+import Documentation from "./pages/student/Documentation";
+import Assignments from "./pages/student/Assignments";
+import Help from "./pages/student/Help";
+import NotFound from "./pages/NotFound";
 
-function App() {
-  return (
-    <ThemeProvider defaultTheme="system" storageKey="vm-management-theme">
-      <AuthProvider>
-        <Toaster position="top-right" richColors />
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
         <Routes>
-          {/* Auth Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
+          {/* Landing Page */}
+          <Route path="/" element={<Index />} />
           
-          {/* Protected Admin Routes */}
-          <Route 
-            path="/admin/*" 
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } 
-          />
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/vms" element={<VmManagement />} />
+          <Route path="/admin/resources" element={<ResourceAllocation />} />
+          <Route path="/admin/storage" element={<Storage />} />
+          <Route path="/admin/network" element={<Network />} />
+          <Route path="/admin/users" element={<UserManagement />} />
+          <Route path="/admin/settings" element={<SystemSettings />} />
+          <Route path="/admin/ai-insights" element={<AiInsights />} />
           
-          {/* Protected Student Routes */}
-          <Route 
-            path="/student/*" 
-            element={
-              <ProtectedRoute allowedRoles={['student']}>
-                <StudentPortal />
-              </ProtectedRoute>
-            } 
-          />
-
-          {/* Profile Page - Accessible to all authenticated users */}
-          <Route 
-            path="/profile" 
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'student', 'instructor']}>
-                <Profile />
-              </ProtectedRoute>
-            } 
-          />
+          {/* Student Routes */}
+          <Route path="/student" element={<StudentPortal />} />
+          <Route path="/student/vms" element={<StudentVms />} />
+          <Route path="/student/resources" element={<StudentResources />} />
+          <Route path="/student/docs" element={<Documentation />} />
+          <Route path="/student/assignments" element={<Assignments />} />
+          <Route path="/student/help" element={<Help />} />
           
-          {/* Default redirect to login */}
-          <Route path="/" element={<Login />} />
-          
-          {/* 404 Page */}
+          {/* 404 Route */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </AuthProvider>
-    </ThemeProvider>
-  );
-}
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;
