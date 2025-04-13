@@ -1,13 +1,14 @@
 
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { Link, Navigate } from 'react-router-dom';
+import { useAuth } from '@/lib/mockAuth';
+import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
 
 const Signup: React.FC = () => {
   const [name, setName] = useState('');
@@ -18,12 +19,9 @@ const Signup: React.FC = () => {
   const [department, setDepartment] = useState('Computer Science');
   const [showPassword, setShowPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
-  const { signUp, user, loading } = useAuth();
-
-  // If already logged in, redirect
-  if (!loading && user) {
-    return <Navigate to="/admin" replace />;
-  }
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { signUp } = useAuth();
+  const navigate = useNavigate();
 
   const validatePassword = () => {
     if (password !== confirmPassword) {
@@ -41,7 +39,20 @@ const Signup: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validatePassword()) return;
-    await signUp(email, password, name, role, department);
+    
+    setIsSubmitting(true);
+    
+    try {
+      await signUp(email, password, name, role, department);
+      toast.success('Account created successfully', {
+        description: 'Please log in with your new account'
+      });
+      navigate('/login');
+    } catch (error: any) {
+      toast.error(error.message || 'Signup failed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -147,7 +158,13 @@ const Signup: React.FC = () => {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full">Sign Up</Button>
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Creating Account...' : 'Sign Up'}
+            </Button>
             <div className="text-center text-sm">
               Already have an account?{' '}
               <Link to="/login" className="text-primary hover:underline">

@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/lib/supabase'; // Import the supabase client
+import { useAuth } from '@/lib/mockAuth';
 import { DashboardLayout } from '@/components/Layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,8 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { userService } from '@/services/userService';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { userService } from '@/lib/mockData';
 
 const Profile: React.FC = () => {
   const { user } = useAuth();
@@ -105,12 +104,8 @@ const Profile: React.FC = () => {
         return;
       }
       
-      // Update password
-      const { error } = await supabase.auth.updateUser({ 
-        password: passwordData.newPassword 
-      });
-      
-      if (error) throw error;
+      // In frontend-only mode, just simulate password change
+      await new Promise(resolve => setTimeout(resolve, 800));
       
       toast('Password updated', {
         description: 'Your password has been updated successfully'
