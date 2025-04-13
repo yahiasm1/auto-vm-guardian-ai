@@ -20,7 +20,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   userType 
 }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   
   const handleLogout = async () => {
@@ -68,7 +68,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <BellRing size={20} />
               </Button>
               <div className="hidden md:flex items-center space-x-2">
-                <span className="text-sm font-medium">{user?.name || 'User'}</span>
+                <span className="text-sm font-medium">{profile?.full_name || user?.email || 'User'}</span>
                 <Button variant="ghost" size="icon" onClick={handleLogout} title="Log out">
                   <LogOut size={18} />
                 </Button>
