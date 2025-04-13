@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const formSchema = z.object({
@@ -86,58 +86,45 @@ const Login = () => {
       
       console.log(`Creating test ${role} account:`, email);
       
-      try {
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        
-        if (signInData?.user) {
-          console.log(`User ${email} already exists and password is correct`);
-          toast.success(`Test ${role} account exists! Signing you in...`);
-          setAccountCreated(email);
-          
-          form.setValue('email', email);
-          form.setValue('password', password);
-          
-          await signIn(email, password);
-          return;
+      // First attempt to create a new user
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: role,
+            department: department || '',
+          }
         }
-      } catch (signInError) {
-        console.log("Sign in check result:", signInError);
-      }
+      });
       
-      try {
-        const result = await signUp(email, password, fullName, role, department);
-        
-        if (result && result.user) {
-          console.log(`Test ${role} account created successfully:`, result.user);
-          toast.success(`Test ${role} account created! You can now sign in.`);
-          setAccountCreated(email);
+      if (error) {
+        if (error.message.includes("User already registered")) {
+          toast.info(`User ${email} already exists. Attempting to sign in...`);
           
-          form.setValue('email', email);
-          form.setValue('password', password);
-        }
-      } catch (error: any) {
-        console.log("Error during signup:", error);
-        
-        if (error.message?.includes("already registered") || 
-            error.message?.includes("duplicate key") || 
-            error.message?.includes("Database error saving") ||
-            error.message?.includes("Email already registered")) {
-          
-          console.log(`User ${email} seems to exist but with different password`);
-          toast.info(`User ${email} already exists but may have a different password. Try signing in with password "Password123".`);
-          setAccountCreated(email);
-          form.setValue('email', email);
-          form.setValue('password', password);
+          // Try to sign in with the default password
+          try {
+            await signIn(email, password);
+            setAccountCreated(email);
+            return;
+          } catch (signInError: any) {
+            setErrorMessage(`Failed to sign in with default password. Error: ${signInError.message}`);
+          }
         } else {
           throw error;
         }
+      } else if (data.user) {
+        console.log(`Test ${role} account created successfully:`, data.user);
+        toast.success(`Test ${role} account created! You can now sign in.`);
+        setAccountCreated(email);
+        
+        form.setValue('email', email);
+        form.setValue('password', password);
       }
     } catch (error: any) {
-      console.error(`Error creating test ${role} account:`, error);
-      setErrorMessage(`Failed to create test ${role} account: ${error.message}`);
+      console.error(`Error creating/signing in test ${role} account:`, error);
+      setErrorMessage(`Operation failed: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -195,7 +182,11 @@ const Login = () => {
                 )}
               />
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Loading...' : 'Login'}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...
+                  </>
+                ) : 'Login'}
               </Button>
             </form>
           </Form>
