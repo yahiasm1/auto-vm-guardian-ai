@@ -112,7 +112,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
 
+      // Create profile record for the new user
+      // The Supabase trigger should handle this automatically, but we'll add the profile creation
+      // here to ensure it works even if the trigger fails
+      if (data.user && data.user.id) {
+        // Note: This will only succeed if the user has proper permissions or if RLS is disabled
+        // A more robust approach would be to use an edge function for this
+        try {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            full_name: fullName,
+            role: role as any,
+            department: department || null,
+            email: email,
+            last_active: new Date().toISOString(),
+            status: 'active'
+          });
+        } catch (profileError) {
+          // We'll just log this error since it might be due to permissions
+          // and the Supabase trigger should handle profile creation anyway
+          console.error('Error creating profile:', profileError);
+        }
+      }
+
       toast.success('Registration successful! Please check your email to confirm your account.');
+      return data;
     } catch (error: any) {
       console.error('Registration error:', error);
       const message = error.message || 'Failed to register';

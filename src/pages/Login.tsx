@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -43,6 +44,7 @@ const Login = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user && profile) {
+      console.log("User authenticated, redirecting:", { user: user.email, role: profile.role });
       const from = (location.state as any)?.from?.pathname || 
         (profile.role === 'admin' ? '/admin' : '/student');
       navigate(from, { replace: true });
@@ -53,6 +55,7 @@ const Login = () => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
+      console.log("Attempting login with:", values.email);
       await signIn(values.email, values.password);
       // Redirection will be handled by the useEffect
     } catch (error: any) {
@@ -71,6 +74,35 @@ const Login = () => {
     } else {
       form.setValue('email', 'student@example.com');
       form.setValue('password', 'student123');
+    }
+  };
+
+  // Helper function to create a test account
+  const createTestAccount = async (role: 'admin' | 'student') => {
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+      
+      const { signUp } = useAuth();
+      
+      const email = role === 'admin' ? 'admin@example.com' : 'student@example.com';
+      const password = role === 'admin' ? 'admin123' : 'student123';
+      const fullName = role === 'admin' ? 'Admin User' : 'Student User';
+      
+      console.log(`Creating test ${role} account:`, email);
+      
+      await signUp(email, password, fullName, role, role === 'admin' ? 'Administration' : 'Computer Science');
+      
+      toast.success(`Test ${role} account created successfully! You can now sign in.`);
+      
+      // Pre-fill the form with these credentials
+      form.setValue('email', email);
+      form.setValue('password', password);
+    } catch (error: any) {
+      console.error(`Error creating test ${role} account:`, error);
+      setErrorMessage(`Failed to create test ${role} account: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -134,7 +166,7 @@ const Login = () => {
                 className="w-full" 
                 onClick={() => fillTestCredentials('admin')}
               >
-                Admin User
+                Fill Admin User
               </Button>
               <Button 
                 variant="outline" 
@@ -142,7 +174,27 @@ const Login = () => {
                 className="w-full" 
                 onClick={() => fillTestCredentials('student')}
               >
-                Student User
+                Fill Student User
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="w-full" 
+                onClick={() => createTestAccount('admin')}
+                disabled={isLoading}
+              >
+                Create Admin User
+              </Button>
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="w-full" 
+                onClick={() => createTestAccount('student')}
+                disabled={isLoading}
+              >
+                Create Student User
               </Button>
             </div>
           </div>
