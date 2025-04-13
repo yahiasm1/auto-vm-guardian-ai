@@ -65,6 +65,17 @@ const Login = () => {
     }
   };
 
+  // For testing purposes: pre-fill with test credentials
+  const fillTestCredentials = (role: 'admin' | 'student') => {
+    if (role === 'admin') {
+      form.setValue('email', 'admin@example.com');
+      form.setValue('password', 'admin123');
+    } else {
+      form.setValue('email', 'student@example.com');
+      form.setValue('password', 'student123');
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
       <Card className="w-full max-w-md">
@@ -115,6 +126,28 @@ const Login = () => {
               </Button>
             </form>
           </Form>
+
+          <div className="mt-6 space-y-2">
+            <p className="text-sm text-center text-muted-foreground">Test accounts</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full" 
+                onClick={() => fillTestCredentials('admin')}
+              >
+                Admin User
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full" 
+                onClick={() => fillTestCredentials('student')}
+              >
+                Student User
+              </Button>
+            </div>
+          </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
           <div className="text-sm text-center text-muted-foreground">

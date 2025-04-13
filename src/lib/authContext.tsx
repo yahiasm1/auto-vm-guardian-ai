@@ -11,6 +11,7 @@ export interface Profile {
   role: 'admin' | 'instructor' | 'student';
   department: string | null;
   status: 'active' | 'inactive' | 'suspended' | 'pending';
+  email: string | null; // Added email field
   last_active: string;
   created_at: string;
 }
@@ -63,6 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
+        console.log('Auth state changed:', event);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
 
@@ -82,6 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // THEN check for existing session
     supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+      console.log('Existing session:', currentSession?.user?.email);
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
 
@@ -113,6 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
 
+      console.log('Login successful:', data.user?.email);
       return;
     } catch (error: any) {
       console.error('Login error:', error);
