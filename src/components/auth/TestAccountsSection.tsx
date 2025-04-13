@@ -47,16 +47,50 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
     }
   };
 
+  const directLogin = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+      console.log(`Directly logging in with ${email}`);
+      
+      // Try direct Supabase login
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) throw error;
+      
+      console.log('Direct login successful:', data);
+      toast.success(`Signed in as ${email}`);
+      return true;
+    } catch (error: any) {
+      console.error(`Direct login error with ${email}:`, error);
+      if (error.message.includes("Invalid login credentials")) {
+        return false;
+      }
+      setErrorMessage(`Could not sign in directly: ${error.message}`);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const loginWithTestAccount = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
       console.log(`Trying to sign in with ${email}`);
       
-      await signIn(email, password);
-      
-      toast.success(`Signed in as ${email}`);
-      return true;
+      // Try with auth context first
+      try {
+        await signIn(email, password);
+        toast.success(`Signed in as ${email}`);
+        return true;
+      } catch (contextError) {
+        // If context method fails, try direct login
+        return await directLogin(email, password);
+      }
     } catch (error: any) {
       console.error(`Login error with ${email}:`, error);
       if (error.message.includes("Invalid login credentials")) {
@@ -65,7 +99,7 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
       setErrorMessage(`Could not sign in: ${error.message}`);
       return false;
     }
-  }
+  };
 
   const createTestAccount = async (role: 'admin' | 'student') => {
     try {
@@ -87,6 +121,8 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
         // User successfully logged in, no need to create an account
         return;
       }
+      
+      console.log('Login failed, attempting to create account');
       
       // If login failed, try to create a new account
       const { data, error } = await supabase.auth.signUp({

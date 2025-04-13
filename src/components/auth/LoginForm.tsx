@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth';
+import { supabase } from '@/integrations/supabase/client';
 
 import {
   Form,
@@ -48,8 +49,21 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       setErrorMessage(null);
       console.log("Attempting login with:", values.email);
       
-      // Use the auth context's signIn method
-      await signIn(values.email, values.password);
+      // Try direct Supabase login if the context method fails
+      try {
+        // First try with auth context's signIn method
+        await signIn(values.email, values.password);
+      } catch (contextError: any) {
+        console.error('Context signIn failed, trying direct Supabase login:', contextError);
+        
+        // If context method fails, try direct Supabase login
+        const { error } = await supabase.auth.signInWithPassword({
+          email: values.email,
+          password: values.password,
+        });
+        
+        if (error) throw error;
+      }
       
       console.log("Login successful");
       toast.success('Login successful');
