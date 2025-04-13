@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -31,9 +31,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { AlertCircle } from 'lucide-react';
 
 const formSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  fullName: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['instructor', 'student'], {
@@ -46,13 +47,21 @@ type FormValues = z.infer<typeof formSchema>;
 
 const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const { signUp } = useAuth();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { signUp, user } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
+      fullName: '',
       email: '',
       password: '',
       role: 'student',
@@ -63,18 +72,18 @@ const Register = () => {
   const onSubmit = async (values: FormValues) => {
     try {
       setIsLoading(true);
+      setErrorMessage(null);
       await signUp(
         values.email,
         values.password,
-        values.name,
+        values.fullName,
         values.role,
         values.department || ''
       );
-      toast.success('Registration successful! You can now login.');
       navigate('/login');
     } catch (error: any) {
       console.error('Registration error:', error);
-      toast.error(error.message || 'Failed to register');
+      setErrorMessage(error.message || 'Failed to register');
     } finally {
       setIsLoading(false);
     }
@@ -90,11 +99,18 @@ const Register = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {errorMessage && (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md mb-4 flex items-start">
+              <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="name"
+                name="fullName"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>

@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,8 +29,9 @@ type FormValues = z.infer<typeof formSchema>;
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { signIn } = useAuth();
+  const { signIn, user, profile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -40,17 +41,25 @@ const Login = () => {
     },
   });
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && profile) {
+      const from = (location.state as any)?.from?.pathname || 
+        (profile.role === 'admin' ? '/admin' : '/student');
+      navigate(from, { replace: true });
+    }
+  }, [user, profile, navigate, location]);
+
   const onSubmit = async (values: FormValues) => {
     try {
       setIsLoading(true);
       setErrorMessage(null);
       await signIn(values.email, values.password);
       toast.success('Login successful');
-      navigate('/admin');
+      // Redirection will be handled by the useEffect
     } catch (error: any) {
       console.error('Login error:', error);
       setErrorMessage(error.message || 'Failed to login. Please check your credentials and try again.');
-      toast.error(error.message || 'Failed to login');
     } finally {
       setIsLoading(false);
     }
@@ -72,15 +81,6 @@ const Login = () => {
               <span>{errorMessage}</span>
             </div>
           )}
-          
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-sm text-blue-700">
-              <strong>Demo Accounts:</strong>
-              <br />
-              <span className="block mt-1">Admin: admin@example.com / admin123</span>
-              <span className="block">Student: student@example.com / student123</span>
-            </p>
-          </div>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

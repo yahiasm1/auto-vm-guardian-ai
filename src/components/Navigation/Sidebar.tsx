@@ -27,7 +27,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { profile, signOut } = useAuth();
   
   // Define navigation items based on user type
   const adminNavItems = [
@@ -101,15 +101,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 rounded-full bg-vmSystem-blue flex items-center justify-center text-white">
-                {user?.name?.charAt(0) || (userType === 'admin' ? 'A' : 'S')}
+                {profile?.full_name?.charAt(0) || (userType === 'admin' ? 'A' : 'S')}
               </div>
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                {user?.name || (userType === 'admin' ? 'Admin User' : 'Student User')}
+                {profile?.full_name || (userType === 'admin' ? 'Admin User' : 'Student User')}
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {user?.department || (userType === 'admin' ? 'System Administrator' : 'Computer Science')}
+                {profile?.department || (userType === 'admin' ? 'System Administrator' : 'Computer Science')}
               </p>
             </div>
           </div>
