@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -66,13 +67,11 @@ const Login = () => {
   };
 
   const fillTestCredentials = (role: 'admin' | 'student') => {
-    if (role === 'admin') {
-      form.setValue('email', 'admin@example.com');
-      form.setValue('password', 'admin123');
-    } else {
-      form.setValue('email', 'student@example.com');
-      form.setValue('password', 'student123');
-    }
+    const email = role === 'admin' ? 'admin1@example.com' : 'student1@example.com';
+    const password = 'Password123';
+    
+    form.setValue('email', email);
+    form.setValue('password', password);
   };
 
   const createTestAccount = async (role: 'admin' | 'student') => {
@@ -80,9 +79,9 @@ const Login = () => {
       setIsLoading(true);
       setErrorMessage(null);
       
-      const email = role === 'admin' ? 'admin@example.com' : 'student@example.com';
-      const password = role === 'admin' ? 'admin123' : 'student123';
-      const fullName = role === 'admin' ? 'Admin User' : 'Student User';
+      const email = role === 'admin' ? 'admin1@example.com' : 'student1@example.com';
+      const password = 'Password123';
+      const fullName = role === 'admin' ? 'Admin Test User' : 'Student Test User';
       const department = role === 'admin' ? 'Administration' : 'Computer Science';
       
       console.log(`Creating test ${role} account:`, email);
@@ -128,7 +127,7 @@ const Login = () => {
             error.message?.includes("Email already registered")) {
           
           console.log(`User ${email} seems to exist but with different password`);
-          toast.info(`User ${email} already exists but may have a different password. Try signing in.`);
+          toast.info(`User ${email} already exists but may have a different password. Try signing in with password "Password123".`);
           setAccountCreated(email);
           form.setValue('email', email);
           form.setValue('password', password);
