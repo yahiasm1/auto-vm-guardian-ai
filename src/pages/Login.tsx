@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/lib/authContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Form,
   FormControl,
@@ -18,6 +17,7 @@ import {
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { AlertCircle } from 'lucide-react';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -28,6 +28,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
@@ -42,11 +43,13 @@ const Login = () => {
   const onSubmit = async (values: FormValues) => {
     try {
       setIsLoading(true);
+      setErrorMessage(null);
       await signIn(values.email, values.password);
       toast.success('Login successful');
       navigate('/admin');
     } catch (error: any) {
       console.error('Login error:', error);
+      setErrorMessage(error.message || 'Failed to login. Please check your credentials and try again.');
       toast.error(error.message || 'Failed to login');
     } finally {
       setIsLoading(false);
@@ -63,6 +66,22 @@ const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {errorMessage && (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md mb-4 flex items-start">
+              <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+          
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-sm text-blue-700">
+              <strong>Demo Accounts:</strong>
+              <br />
+              <span className="block mt-1">Admin: admin@example.com / admin123</span>
+              <span className="block">Student: student@example.com / student123</span>
+            </p>
+          </div>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
