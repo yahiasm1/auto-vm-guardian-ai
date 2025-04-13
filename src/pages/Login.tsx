@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -55,7 +54,6 @@ const Login = () => {
       setIsLoading(true);
       setErrorMessage(null);
       await signIn(values.email, values.password);
-      toast.success('Login successful');
       // Redirection will be handled by the useEffect
     } catch (error: any) {
       console.error('Login error:', error);

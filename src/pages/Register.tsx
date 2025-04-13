@@ -79,6 +79,7 @@ const Register = () => {
         values.role,
         values.department || ''
       );
+      toast.success('Registration successful! Please check your email to confirm your account.');
       navigate('/login');
     } catch (error: any) {
       console.error('Registration error:', error);

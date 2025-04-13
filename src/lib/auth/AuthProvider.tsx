@@ -1,11 +1,10 @@
 
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AuthContextProps, Profile } from './types';
-import { useSupabaseAuth, fetchUserProfile } from './useSupabaseAuth';
-import { useApiAuth } from './useApiAuth';
+import { fetchUserProfile } from './useSupabaseAuth';
 
 // Create authentication context
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -16,10 +15,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-
-  // Get auth methods from custom hooks
-  const supabaseAuth = useSupabaseAuth();
-  const apiAuth = useApiAuth();
 
   // Load user on initialization
   useEffect(() => {
@@ -63,32 +58,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Sign in function - try both Supabase and API auth
+  // Sign in function using Supabase auth
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
       console.log('Attempting login with:', { email });
       
-      // First try Supabase authentication
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        // If Supabase auth fails, try the API
-        const apiResult = await apiAuth.apiLogin(email, password);
-        if (apiResult) {
-          setUser(apiResult.user);
-          setProfile(apiResult.profile);
-          toast.success('Login successful via API');
-          return;
-        } else {
-          throw error; // Throw the original Supabase error if API fails too
-        }
+        throw error;
       } else {
         console.log('Login successful:', data.user?.email);
-        toast.success('Login successful via Supabase');
+        toast.success('Login successful');
         return;
       }
     } catch (error: any) {
@@ -107,16 +92,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Sign out function
+  // Sign up function using Supabase auth
+  const signUp = async (email: string, password: string, fullName: string, role: string, department: string) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: role || 'student',
+            department: department || '',
+          }
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('Registration successful! Please check your email to confirm your account.');
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      const message = error.message || 'Failed to register';
+      toast.error(message);
+      throw new Error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sign out function using Supabase auth
   const signOut = async () => {
     try {
       setLoading(true);
-      
-      // First try Supabase signout
       const { error } = await supabase.auth.signOut();
-      
-      // Also sign out from the API
-      await apiAuth.apiLogout();
       
       if (error) {
         throw error;
@@ -124,6 +135,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error: any) {
       console.error('Logout error:', error);
       toast.error('Failed to log out');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // OAuth sign-in function
+  const signInWithOAuth = async (provider: string) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: provider as any,
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      console.error('OAuth error:', error);
+      toast.error('OAuth sign in failed');
     } finally {
       setLoading(false);
     }
@@ -137,8 +167,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       loading,
       signIn,
       signOut,
-      signUp: supabaseAuth.signUp,
-      signInWithOAuth: supabaseAuth.signInWithOAuth
+      signUp,
+      signInWithOAuth
     }}>
       {children}
     </AuthContext.Provider>
@@ -153,6 +183,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-// Import React's useContext at the top level to avoid issues
-import { useContext } from 'react';
