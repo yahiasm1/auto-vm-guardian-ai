@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/lib/auth';
 
 interface TestAccountsSectionProps {
   onSetCredentials: (email: string, password: string) => void;
@@ -12,6 +13,7 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [accountCreated, setAccountCreated] = useState<string | null>(null);
+  const { signIn } = useAuth();
 
   const fillTestCredentials = (role: 'admin' | 'student') => {
     // Using the correct emails from your authentication system
@@ -56,51 +58,43 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
       const fullName = role === 'admin' ? 'Admin Test User' : 'Student Test User';
       const department = role === 'admin' ? 'Administration' : 'Computer Science';
       
-      console.log(`Creating or signing in with test ${role} account:`, email);
+      console.log(`Creating test ${role} account:`, email);
       
-      // First try to sign in with existing account
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) {
+      // Create a new account
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: role,
+            department: department || '',
+          }
+        }
+      });
+      
+      if (error) {
+        if (error.message.includes("User already registered")) {
+          // User exists, try to sign in
+          toast.info(`${role} account already exists, attempting to sign in...`);
+          
+          try {
+            await signIn(email, password);
+            toast.success(`Signed in as ${email}`);
+            return;
+          } catch (signInError: any) {
+            setErrorMessage(`User ${email} exists but could not sign in: ${signInError.message}`);
+            return;
+          }
+        } else {
           throw error;
         }
+      } else if (data.user) {
+        console.log(`Test ${role} account created successfully:`, data.user);
+        toast.success(`Test ${role} account created! You can now sign in.`);
+        setAccountCreated(email);
         
-        toast.success(`Signed in with existing ${role} account`);
-        return;
-      } catch (signInError: any) {
-        console.log(`Sign in failed, will try to create account:`, signInError.message);
-        
-        // If sign in fails, try to create a new account
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-              role: role,
-              department: department || '',
-            }
-          }
-        });
-        
-        if (error) {
-          if (error.message.includes("User already registered")) {
-            setErrorMessage(`User ${email} exists but with a different password. Try the reset password button.`);
-            toast.error(`User ${email} already exists but password may be different.`);
-          } else {
-            throw error;
-          }
-        } else if (data.user) {
-          console.log(`Test ${role} account created successfully:`, data.user);
-          toast.success(`Test ${role} account created! You can now sign in.`);
-          setAccountCreated(email);
-          
-          onSetCredentials(email, password);
-        }
+        onSetCredentials(email, password);
       }
     } catch (error: any) {
       console.error(`Error handling ${role} account:`, error);
@@ -151,7 +145,7 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
           onClick={() => createTestAccount('admin')}
           disabled={isLoading}
         >
-          Login/Create Admin
+          Create/Login Admin
         </Button>
         <Button 
           variant="secondary" 
@@ -160,7 +154,7 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
           onClick={() => createTestAccount('student')}
           disabled={isLoading}
         >
-          Login/Create Student
+          Create/Login Student
         </Button>
       </div>
       <div className="grid grid-cols-2 gap-2 mt-2">

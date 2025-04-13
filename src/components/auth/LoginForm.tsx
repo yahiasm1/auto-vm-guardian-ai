@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/auth';
 
 import {
   Form,
@@ -32,6 +33,7 @@ interface LoginFormProps {
 const LoginForm = ({ onSuccess }: LoginFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { signIn } = useAuth();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -47,36 +49,14 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       setErrorMessage(null);
       console.log("Attempting login with:", values.email);
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
+      // Use the auth context's signIn method instead of direct supabase call
+      await signIn(values.email, values.password);
       
-      if (error) {
-        console.error("Supabase auth error:", error);
-        throw error;
-      }
-      
-      console.log("Login successful:", data);
+      console.log("Login successful");
       toast.success('Login successful');
       onSuccess?.();
     } catch (error: any) {
       console.error('Login error:', error);
-      
-      // Check if there's a profile for this user
-      try {
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData?.user?.id) {
-          const { data: profileData } = await supabase.from('profiles').select('*').eq('id', userData.user.id).maybeSingle();
-          console.log("Profile check:", profileData);
-          if (!profileData) {
-            setErrorMessage('Your account exists but has no profile. Please contact an administrator.');
-            return;
-          }
-        }
-      } catch (profileError) {
-        console.error("Profile check error:", profileError);
-      }
       
       let errorMsg = 'Failed to login. Please check your credentials and try again.';
       if (error.message) {
@@ -84,7 +64,7 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
         
         // Check for common Supabase errors
         if (errorMsg.includes('Invalid login credentials')) {
-          errorMsg = 'Invalid email or password. Please try again.';
+          errorMsg = 'Invalid email or password. Please try again or create an account if you don\'t have one.';
         }
       }
       
