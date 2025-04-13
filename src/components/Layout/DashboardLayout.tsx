@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Sidebar } from '../Navigation/Sidebar';
-import { useAuth } from '@/lib/authContext';
+import { useAuth } from '@/lib/auth';
 import { useNavigate } from 'react-router-dom';
 import { User, BellRing, Menu, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
