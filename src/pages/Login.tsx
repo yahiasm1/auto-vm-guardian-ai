@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -17,6 +18,7 @@ import {
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -31,6 +33,7 @@ const Login = () => {
   const { signIn, user, profile, signUp } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [accountCreated, setAccountCreated] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -88,16 +91,44 @@ const Login = () => {
       
       console.log(`Creating test ${role} account:`, email);
       
-      await signUp(email, password, fullName, role, role === 'admin' ? 'Administration' : 'Computer Science');
+      // First check if user already exists
+      const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email).catch(() => ({ data: null }));
       
-      toast.success(`Test ${role} account created successfully! You can now sign in.`);
+      if (existingUser) {
+        console.log(`User ${email} already exists, no need to create`);
+        toast.success(`Test ${role} account already exists! You can now sign in.`);
+        setAccountCreated(email);
+        // Pre-fill the form with these credentials
+        form.setValue('email', email);
+        form.setValue('password', password);
+        return;
+      }
       
-      // Pre-fill the form with these credentials
-      form.setValue('email', email);
-      form.setValue('password', password);
+      const result = await signUp(email, password, fullName, role, role === 'admin' ? 'Administration' : 'Computer Science');
+      
+      if (result && result.user) {
+        console.log(`Test ${role} account created successfully:`, result.user);
+        toast.success(`Test ${role} account created successfully! You can now sign in.`);
+        setAccountCreated(email);
+        // Pre-fill the form with these credentials
+        form.setValue('email', email);
+        form.setValue('password', password);
+      } else {
+        console.log(`Failed to create test ${role} account`);
+        toast.error(`Failed to create test ${role} account`);
+      }
     } catch (error: any) {
       console.error(`Error creating test ${role} account:`, error);
-      setErrorMessage(`Failed to create test ${role} account: ${error.message}`);
+      if (error.message?.includes("already registered")) {
+        toast.success(`Test ${role} account already exists! You can now sign in.`);
+        const email = role === 'admin' ? 'admin@example.com' : 'student@example.com';
+        const password = role === 'admin' ? 'admin123' : 'student123';
+        form.setValue('email', email);
+        form.setValue('password', password);
+        setAccountCreated(email);
+      } else {
+        setErrorMessage(`Failed to create test ${role} account: ${error.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -117,6 +148,12 @@ const Login = () => {
             <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md mb-4 flex items-start">
               <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
               <span>{errorMessage}</span>
+            </div>
+          )}
+          
+          {accountCreated && (
+            <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-md mb-4">
+              Account created with email: {accountCreated}. You can now sign in.
             </div>
           )}
 

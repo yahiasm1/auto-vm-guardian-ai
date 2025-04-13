@@ -28,8 +28,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (currentSession?.user) {
           // Use setTimeout to prevent Supabase deadlock
           setTimeout(async () => {
-            const userProfile = await fetchUserProfile(currentSession.user.id);
-            setProfile(userProfile);
+            try {
+              const userProfile = await fetchUserProfile(currentSession.user.id);
+              console.log('Fetched user profile:', userProfile);
+              setProfile(userProfile);
+            } catch (error) {
+              console.error('Error fetching user profile:', error);
+            }
           }, 0);
         } else {
           setProfile(null);
@@ -46,8 +51,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(currentSession?.user ?? null);
 
       if (currentSession?.user) {
-        const userProfile = await fetchUserProfile(currentSession.user.id);
-        setProfile(userProfile);
+        try {
+          const userProfile = await fetchUserProfile(currentSession.user.id);
+          console.log('Fetched user profile from existing session:', userProfile);
+          setProfile(userProfile);
+        } catch (error) {
+          console.error('Error fetching user profile from existing session:', error);
+        }
       }
 
       setLoading(false);
@@ -70,6 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error) {
+        console.error('Login error details:', error);
         throw error;
       } else {
         console.log('Login successful:', data.user?.email);
@@ -96,6 +107,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signUp = async (email: string, password: string, fullName: string, role: string, department: string) => {
     try {
       setLoading(true);
+      console.log('Signing up user:', { email, fullName, role });
+      
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -109,17 +122,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error) {
+        console.error('Registration error details:', error);
         throw error;
       }
+
+      console.log('Registration data returned:', data);
 
       // Create profile record for the new user
       // The Supabase trigger should handle this automatically, but we'll add the profile creation
       // here to ensure it works even if the trigger fails
       if (data.user && data.user.id) {
+        console.log('Creating profile for:', data.user.id);
         // Note: This will only succeed if the user has proper permissions or if RLS is disabled
         // A more robust approach would be to use an edge function for this
         try {
-          await supabase.from('profiles').upsert({
+          const { data: profileData, error: profileError } = await supabase.from('profiles').upsert({
             id: data.user.id,
             full_name: fullName,
             role: role as any,
@@ -127,11 +144,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             email: email,
             last_active: new Date().toISOString(),
             status: 'active'
-          });
+          }).select('*');
+
+          if (profileError) {
+            console.error('Error creating profile:', profileError);
+          } else {
+            console.log('Profile created successfully:', profileData);
+          }
         } catch (profileError) {
           // We'll just log this error since it might be due to permissions
           // and the Supabase trigger should handle profile creation anyway
-          console.error('Error creating profile:', profileError);
+          console.error('Exception creating profile:', profileError);
         }
       }
 

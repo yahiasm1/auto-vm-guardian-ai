@@ -6,6 +6,12 @@ import { Profile } from './types';
 export const fetchUserProfile = async (userId: string): Promise<Profile | null> => {
   try {
     console.log('Fetching profile for user:', userId);
+    
+    if (!userId) {
+      console.error('Cannot fetch profile: No user ID provided');
+      return null;
+    }
+    
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -25,7 +31,7 @@ export const fetchUserProfile = async (userId: string): Promise<Profile | null> 
     console.log('Profile fetched successfully:', data);
     return data as Profile;
   } catch (error) {
-    console.error('Error in fetchUserProfile:', error);
+    console.error('Exception in fetchUserProfile:', error);
     return null;
   }
 };
@@ -34,6 +40,12 @@ export const fetchUserProfile = async (userId: string): Promise<Profile | null> 
 export const createOrUpdateProfile = async (profile: Partial<Profile> & { id: string }): Promise<Profile | null> => {
   try {
     console.log('Creating/updating profile:', profile);
+    
+    if (!profile.id) {
+      console.error('Cannot update profile: No user ID provided');
+      return null;
+    }
+    
     const { data, error } = await supabase
       .from('profiles')
       .upsert(profile)
@@ -48,7 +60,7 @@ export const createOrUpdateProfile = async (profile: Partial<Profile> & { id: st
     console.log('Profile created/updated successfully:', data);
     return data as Profile;
   } catch (error) {
-    console.error('Error in createOrUpdateProfile:', error);
+    console.error('Exception in createOrUpdateProfile:', error);
     return null;
   }
 };
