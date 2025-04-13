@@ -67,7 +67,8 @@ const Login = () => {
   };
 
   const fillTestCredentials = (role: 'admin' | 'student') => {
-    const email = role === 'admin' ? 'admin1@example.com' : 'student1@example.com';
+    // Using the correct emails from your authentication system
+    const email = role === 'admin' ? 'admin@example.com' : 'student@example.com';
     const password = 'Password123';
     
     form.setValue('email', email);
@@ -79,51 +80,52 @@ const Login = () => {
       setIsLoading(true);
       setErrorMessage(null);
       
-      const email = role === 'admin' ? 'admin1@example.com' : 'student1@example.com';
+      // Using the correct emails from your authentication system
+      const email = role === 'admin' ? 'admin@example.com' : 'student@example.com';
       const password = 'Password123';
       const fullName = role === 'admin' ? 'Admin Test User' : 'Student Test User';
       const department = role === 'admin' ? 'Administration' : 'Computer Science';
       
-      console.log(`Creating test ${role} account:`, email);
+      console.log(`Creating or signing in with test ${role} account:`, email);
       
-      // First attempt to create a new user
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: role,
-            department: department || '',
-          }
-        }
-      });
-      
-      if (error) {
-        if (error.message.includes("User already registered")) {
-          toast.info(`User ${email} already exists. Attempting to sign in...`);
-          
-          // Try to sign in with the default password
-          try {
-            await signIn(email, password);
-            setAccountCreated(email);
-            return;
-          } catch (signInError: any) {
-            setErrorMessage(`Failed to sign in with default password. Error: ${signInError.message}`);
-          }
-        } else {
-          throw error;
-        }
-      } else if (data.user) {
-        console.log(`Test ${role} account created successfully:`, data.user);
-        toast.success(`Test ${role} account created! You can now sign in.`);
-        setAccountCreated(email);
+      // First try to sign in with existing account
+      try {
+        await signIn(email, password);
+        toast.success(`Signed in with existing ${role} account`);
+        return;
+      } catch (signInError: any) {
+        console.log(`Sign in failed, will try to create account:`, signInError.message);
         
-        form.setValue('email', email);
-        form.setValue('password', password);
+        // If sign in fails, try to create a new account
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+              role: role,
+              department: department || '',
+            }
+          }
+        });
+        
+        if (error) {
+          if (error.message.includes("User already registered")) {
+            toast.error(`User ${email} already exists but password may be different. Please contact an administrator.`);
+          } else {
+            throw error;
+          }
+        } else if (data.user) {
+          console.log(`Test ${role} account created successfully:`, data.user);
+          toast.success(`Test ${role} account created! You can now sign in.`);
+          setAccountCreated(email);
+          
+          form.setValue('email', email);
+          form.setValue('password', password);
+        }
       }
     } catch (error: any) {
-      console.error(`Error creating/signing in test ${role} account:`, error);
+      console.error(`Error handling ${role} account:`, error);
       setErrorMessage(`Operation failed: ${error.message}`);
     } finally {
       setIsLoading(false);
@@ -219,7 +221,7 @@ const Login = () => {
                 onClick={() => createTestAccount('admin')}
                 disabled={isLoading}
               >
-                Create Admin User
+                Create/Login Admin
               </Button>
               <Button 
                 variant="secondary" 
@@ -228,7 +230,7 @@ const Login = () => {
                 onClick={() => createTestAccount('student')}
                 disabled={isLoading}
               >
-                Create Student User
+                Create/Login Student
               </Button>
             </div>
           </div>
