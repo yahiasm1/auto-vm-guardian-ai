@@ -91,16 +91,23 @@ const Login = () => {
       
       console.log(`Creating test ${role} account:`, email);
       
-      // First check if user already exists
-      const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email).catch(() => ({ data: null }));
+      // Check if the user already exists by attempting a sign-in (with error handling suppressed)
+      const { data: signInCheck, error: signInError } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      }).catch(() => ({ data: null, error: null }));
       
-      if (existingUser) {
+      // If we can sign in successfully, the user exists
+      if (signInCheck?.user) {
         console.log(`User ${email} already exists, no need to create`);
         toast.success(`Test ${role} account already exists! You can now sign in.`);
         setAccountCreated(email);
         // Pre-fill the form with these credentials
         form.setValue('email', email);
         form.setValue('password', password);
+        
+        // Sign out again since we were just checking existence
+        await supabase.auth.signOut();
         return;
       }
       
