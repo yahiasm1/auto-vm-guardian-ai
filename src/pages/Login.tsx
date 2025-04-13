@@ -88,17 +88,45 @@ const Login = () => {
       const email = role === 'admin' ? 'admin@example.com' : 'student@example.com';
       const password = role === 'admin' ? 'admin123' : 'student123';
       const fullName = role === 'admin' ? 'Admin User' : 'Student User';
+      const department = role === 'admin' ? 'Administration' : 'Computer Science';
       
       console.log(`Creating test ${role} account:`, email);
       
+      // First check if user exists by attempting to sign in
       try {
-        // Attempt to sign up - if the user exists, it will throw an error
-        const result = await signUp(email, password, fullName, role, role === 'admin' ? 'Administration' : 'Computer Science');
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (signInData?.user) {
+          // User exists and password is correct
+          console.log(`User ${email} already exists and password is correct`);
+          toast.success(`Test ${role} account exists! Signing you in...`);
+          setAccountCreated(email);
+          
+          // Pre-fill the form with credentials
+          form.setValue('email', email);
+          form.setValue('password', password);
+          
+          // Attempt to sign in properly through our auth handler
+          await signIn(email, password);
+          return;
+        }
+      } catch (signInError) {
+        // Either user doesn't exist or password is wrong
+        console.log("Sign in check result:", signInError);
+      }
+      
+      // Try to create the account
+      try {
+        const result = await signUp(email, password, fullName, role, department);
         
         if (result && result.user) {
           console.log(`Test ${role} account created successfully:`, result.user);
           toast.success(`Test ${role} account created successfully! You can now sign in.`);
           setAccountCreated(email);
+          
           // Pre-fill the form with these credentials
           form.setValue('email', email);
           form.setValue('password', password);
@@ -110,12 +138,11 @@ const Login = () => {
         if (error.message?.includes("already registered") || 
             error.message?.includes("duplicate key") || 
             error.message?.includes("Database error saving")) {
-          // The user already exists, inform the user and pre-fill the form
-          console.log(`User ${email} already exists`);
-          toast.success(`Test ${role} account already exists! You can now sign in.`);
+          
+          console.log(`User ${email} seems to exist but with different password`);
+          toast.info(`User ${email} already exists but may have a different password. Try a new password.`);
           setAccountCreated(email);
           form.setValue('email', email);
-          form.setValue('password', password);
         } else {
           // It's a different error, rethrow it
           throw error;

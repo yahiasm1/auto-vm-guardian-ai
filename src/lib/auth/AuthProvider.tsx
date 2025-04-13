@@ -109,24 +109,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       console.log('Signing up user:', { email, fullName, role });
       
-      // First check if the user already exists by trying to sign in
-      const { data: existingData, error: existingError } = await supabase.auth.signInWithPassword({
-        email, 
-        password
-      }).catch(() => ({ data: null, error: { message: 'Not found' } }));
+      // First check if the user already exists without trying to sign in
+      const { data: userCheck, error: userCheckError } = await supabase.auth.admin.listUsers({
+        filter: {
+          email: email
+        }
+      }).catch(() => ({ data: null, error: null }));
       
-      if (existingData?.user) {
-        // If login successful, the user already exists
+      // If we can find the user, they already exist
+      if (userCheck && userCheck.users && userCheck.users.length > 0) {
         console.log('User already exists:', email);
         
-        // Sign out again to allow proper login flow
+        // Sign out in case we're somehow signed in
         await supabase.auth.signOut();
         
-        // Return the user data to indicate success
-        return { user: existingData.user, session: null };
+        throw new Error("Email already registered. Please sign in instead.");
       }
       
-      // If we get here, user doesn't exist or wrong password, proceed with signup
+      // If we get here, proceed with signup
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
