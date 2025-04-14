@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,20 +26,32 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface LoginFormProps {
   onSuccess?: () => void;
+  initialCredentials?: { email: string; password: string };
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
+export const LoginForm: React.FC<LoginFormProps> = ({ 
+  onSuccess,
+  initialCredentials = { email: '', password: '' }
+}) => {
   const { signIn } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: initialCredentials.email || '',
+      password: initialCredentials.password || '',
     },
   });
+
+  useEffect(() => {
+    if (initialCredentials.email || initialCredentials.password) {
+      form.setValue('email', initialCredentials.email);
+      form.setValue('password', initialCredentials.password);
+    }
+  }, [initialCredentials, form]);
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -49,6 +62,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       
       if (onSuccess) {
         onSuccess();
+      } else {
+        navigate('/');
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -103,5 +118,3 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     </Form>
   );
 };
-
-export default LoginForm;

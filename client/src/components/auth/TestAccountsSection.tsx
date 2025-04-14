@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 interface TestAccountsProps {
-  onSetCredentials: (email: string, password: string) => void;
+  onSetCredentials?: (email: string, password: string) => void;
 }
 
-const TestAccountsSection: React.FC<TestAccountsProps> = ({ onSetCredentials }) => {
+const TestAccountsSection: React.FC<TestAccountsProps> = ({ onSetCredentials = () => {} }) => {
   const testAccounts = [
     { role: 'Admin', email: 'admin@example.com', password: 'admin123' },
     { role: 'Student', email: 'student@example.com', password: 'student123' }
