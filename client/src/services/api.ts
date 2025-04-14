@@ -20,8 +20,8 @@ export const authService = {
     const response = await api.post('/auth/login', { email, password });
     
     // Store the token in local storage
-    if (response.data.accessToken) {
-      localStorage.setItem('accessToken', response.data.accessToken);
+    if (response.data.token) {
+      localStorage.setItem('accessToken', response.data.token);
     }
     
     return response.data;
@@ -45,8 +45,8 @@ export const authService = {
     try {
       const response = await api.post('/auth/refresh-token');
       
-      if (response.data.accessToken) {
-        localStorage.setItem('accessToken', response.data.accessToken);
+      if (response.data.token) {
+        localStorage.setItem('accessToken', response.data.token);
       }
       
       return response.data;
@@ -117,9 +117,9 @@ api.interceptors.response.use(
         // Try to refresh the token
         const refreshResponse = await authService.refreshToken();
         
-        if (refreshResponse.accessToken) {
+        if (refreshResponse.token) {
           // Update the original request with the new token
-          originalRequest.headers.Authorization = `Bearer ${refreshResponse.accessToken}`;
+          originalRequest.headers.Authorization = `Bearer ${refreshResponse.token}`;
           return axios(originalRequest);
         }
       } catch (refreshError) {

@@ -2,14 +2,32 @@
 import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import { toast } from 'sonner';
 import { authService } from '@/services/api';
-import { AuthContextProps } from './types';
+
+// Define types
+interface User {
+  id: string;
+  email: string;
+  role: string;
+  name: string;
+}
+
+export interface AuthContextProps {
+  user: User | null;
+  profile: any | null;
+  session: null;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<any>;
+  signUp: (email: string, password: string, fullName: string, role: string, department?: string) => Promise<any>;
+  signOut: () => Promise<void>;
+  signInWithOAuth: () => Promise<void>;
+}
 
 // Create authentication context
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 // User provider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
