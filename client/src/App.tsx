@@ -12,6 +12,7 @@ import Index from '@/pages/Index';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import AdminDashboard from '@/pages/AdminDashboard';
+import StudentDashboard from '@/pages/StudentDashboard';
 import NotFound from '@/pages/NotFound';
 
 // Create a client for React Query
@@ -42,6 +43,11 @@ function App() {
               <Route path="/admin" element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/student" element={
+                <ProtectedRoute requiredRole="student">
+                  <StudentDashboard />
                 </ProtectedRoute>
               } />
 
