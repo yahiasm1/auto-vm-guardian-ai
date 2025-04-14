@@ -44,7 +44,7 @@ const Login = () => {
             </div>
           )}
 
-          <LoginForm />
+          <LoginForm onSuccess={() => {}} />
           
           <TestAccountsSection onSetCredentials={setCredentials} />
         </CardContent>

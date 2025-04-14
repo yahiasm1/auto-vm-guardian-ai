@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { authService } from '@/services/api';
 import { Profile } from './types';
 
 // Fetch user profile
@@ -12,24 +12,28 @@ export const fetchUserProfile = async (userId: string): Promise<Profile | null> 
       return null;
     }
     
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle(); // Using maybeSingle instead of single to handle cases where profile doesn't exist yet
-
-    if (error) {
-      console.error('Error fetching profile:', error);
-      return null;
-    }
-
-    if (!data) {
+    // In our PostgreSQL setup, the user data already includes profile info
+    const userData = await authService.getCurrentUser();
+    
+    if (!userData) {
       console.log('No profile found for user:', userId);
       return null;
     }
 
-    console.log('Profile fetched successfully:', data);
-    return data as Profile;
+    // Map the user data to our Profile interface
+    const profile: Profile = {
+      id: userData.id,
+      full_name: userData.name,
+      role: userData.role as 'admin' | 'instructor' | 'student',
+      department: userData.department || null,
+      status: userData.status as 'active' | 'inactive' | 'suspended' | 'pending',
+      email: userData.email,
+      last_active: userData.last_active || '',
+      created_at: userData.created_at || '',
+    };
+
+    console.log('Profile fetched successfully:', profile);
+    return profile;
   } catch (error) {
     console.error('Exception in fetchUserProfile:', error);
     return null;
@@ -46,19 +50,29 @@ export const createOrUpdateProfile = async (profile: Partial<Profile> & { id: st
       return null;
     }
     
-    const { data, error } = await supabase
-      .from('profiles')
-      .upsert(profile)
-      .select('*')
-      .maybeSingle();
-
-    if (error) {
-      console.error('Error creating/updating profile:', error);
+    // With our PostgreSQL setup, profile updates would be handled by
+    // a dedicated API endpoint which we don't have yet.
+    // For now, we'll just return the current profile from auth service
+    const userData = await authService.getCurrentUser();
+    
+    if (!userData) {
       return null;
     }
-
-    console.log('Profile created/updated successfully:', data);
-    return data as Profile;
+    
+    // Map the user data to our Profile interface
+    const updatedProfile: Profile = {
+      id: userData.id,
+      full_name: userData.name,
+      role: userData.role as 'admin' | 'instructor' | 'student',
+      department: userData.department || null,
+      status: userData.status as 'active' | 'inactive' | 'suspended' | 'pending',
+      email: userData.email,
+      last_active: userData.last_active || '',
+      created_at: userData.created_at || '',
+    };
+    
+    console.log('Profile data:', updatedProfile);
+    return updatedProfile;
   } catch (error) {
     console.error('Exception in createOrUpdateProfile:', error);
     return null;

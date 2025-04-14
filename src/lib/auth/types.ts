@@ -1,6 +1,4 @@
 
-import { User, Session } from '@supabase/supabase-js';
-
 // Define user types
 export interface Profile {
   id: string;
@@ -15,12 +13,12 @@ export interface Profile {
 
 // Define authentication context type
 export interface AuthContextProps {
-  user: User | null;
+  user: any | null;
   profile: Profile | null;
-  session: Session | null;
+  session: null; // We don't use sessions in our PostgreSQL setup
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
-  signUp: (email: string, password: string, fullName: string, role: string, department: string) => Promise<{ user: User | null; session: Session | null; } | null>;
+  signUp: (email: string, password: string, fullName: string, role: string, department: string) => Promise<any>;
   signInWithOAuth: (provider: string) => Promise<void>;
 }

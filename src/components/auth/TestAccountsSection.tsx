@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 
 interface TestAccountsSectionProps {
@@ -13,12 +12,12 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [accountCreated, setAccountCreated] = useState<string | null>(null);
-  const { signIn } = useAuth();
+  const { signIn, signUp } = useAuth();
 
   const fillTestCredentials = (role: 'admin' | 'student') => {
     // Using the correct emails from your authentication system
     const email = role === 'admin' ? 'admin@example.com' : 'student@example.com';
-    const password = 'Password123';
+    const password = role === 'admin' ? 'admin123' : 'student123';
     
     onSetCredentials(email, password);
   };
@@ -30,47 +29,13 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
       setIsLoading(true);
       setErrorMessage(null);
       
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/reset-password',
-      });
+      // We don't have password reset functionality in our current setup
+      // This is just a placeholder
+      toast.info(`Password reset functionality is not available in the current setup.`);
       
-      if (error) {
-        throw error;
-      }
-      
-      toast.success(`Password reset email sent to ${email}`);
     } catch (error: any) {
       console.error('Password reset error:', error);
-      setErrorMessage(`Failed to send password reset: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const directLogin = async (email: string, password: string) => {
-    try {
-      setIsLoading(true);
-      setErrorMessage(null);
-      console.log(`Directly logging in with ${email}`);
-      
-      // Try direct Supabase login
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (error) throw error;
-      
-      console.log('Direct login successful:', data);
-      toast.success(`Signed in as ${email}`);
-      return true;
-    } catch (error: any) {
-      console.error(`Direct login error with ${email}:`, error);
-      if (error.message.includes("Invalid login credentials")) {
-        return false;
-      }
-      setErrorMessage(`Could not sign in directly: ${error.message}`);
-      return false;
+      setErrorMessage(`Failed to reset password: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -82,22 +47,18 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
       setErrorMessage(null);
       console.log(`Trying to sign in with ${email}`);
       
-      // Try with auth context first
-      try {
-        await signIn(email, password);
-        toast.success(`Signed in as ${email}`);
-        return true;
-      } catch (contextError) {
-        // If context method fails, try direct login
-        return await directLogin(email, password);
-      }
+      await signIn(email, password);
+      toast.success(`Signed in as ${email}`);
+      return true;
     } catch (error: any) {
       console.error(`Login error with ${email}:`, error);
-      if (error.message.includes("Invalid login credentials")) {
+      if (error.message.includes("Invalid credentials")) {
         return false;
       }
       setErrorMessage(`Could not sign in: ${error.message}`);
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -108,7 +69,7 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
       
       // Using the correct emails from your authentication system
       const email = role === 'admin' ? 'admin@example.com' : 'student@example.com';
-      const password = 'Password123';
+      const password = role === 'admin' ? 'admin123' : 'student123';
       const fullName = role === 'admin' ? 'Admin Test User' : 'Student Test User';
       const department = role === 'admin' ? 'Administration' : 'Computer Science';
       
@@ -125,34 +86,22 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
       console.log('Login failed, attempting to create account');
       
       // If login failed, try to create a new account
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: role,
-            department: department || '',
-          }
-        }
-      });
+      await signUp(email, password, fullName, role, department);
       
-      if (error) {
-        if (error.message.includes("User already registered")) {
-          setErrorMessage(`Account ${email} exists but password may be different. Try the reset password option.`);
-          return;
-        }
-        throw error;
-      } else if (data.user) {
-        console.log(`Test ${role} account created successfully:`, data.user);
-        toast.success(`Test ${role} account created! You can now sign in.`);
-        setAccountCreated(email);
-        
-        onSetCredentials(email, password);
-      }
+      toast.success(`Test ${role} account created! You can now sign in.`);
+      setAccountCreated(email);
+      
+      onSetCredentials(email, password);
+      
     } catch (error: any) {
       console.error(`Error handling ${role} account:`, error);
-      setErrorMessage(`Operation failed: ${error.message}`);
+      
+      // Better error handling for common issues
+      if (error.message.includes("already in use")) {
+        setErrorMessage(`Account ${email} exists but password may be different. Try the reset password option.`);
+      } else {
+        setErrorMessage(`Operation failed: ${error.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
