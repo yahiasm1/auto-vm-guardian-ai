@@ -6,17 +6,23 @@ export interface VM {
   name: string;
   state: string;
   status?: "running" | "stopped" | "suspended" | "creating" | "error";
+  description?: string;
+  ip_address?: string;
+  os_type?: string;
+  memory?: number;
+  vcpus?: number;
+  storage?: string;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface VMInfo extends VM {
   memory_stats?: Record<string, string>;
-  id?: string;
   uuid?: string;
-  os_type?: string;
   cpu_time?: string;
   max_memory?: string;
   used_memory?: string;
-  state?: string;
   [key: string]: any;
 }
 
@@ -24,6 +30,7 @@ export interface VMOperationResult {
   success: boolean;
   message: string;
   vmName: string;
+  vm?: VM;
 }
 
 export const vmService = {
@@ -114,14 +121,24 @@ export const vmService = {
   },
   
   /**
+   * Update VM details
+   */
+  async updateVM(vmName: string, vmData: Partial<VM>): Promise<VMOperationResult> {
+    const response = await api.put(`/vm/${vmName}`, vmData);
+    return response.data;
+  },
+  
+  /**
    * Map libvirt state to frontend status
    */
   mapStateToStatus(state: string): "running" | "stopped" | "suspended" | "creating" | "error" {
+    if (!state) return 'error';
+    
     state = state.toLowerCase();
     
     if (state.includes('running')) return 'running';
-    if (state.includes('shut off') || state.includes('shutoff')) return 'stopped';
-    if (state.includes('paused') || state.includes('suspended')) return 'suspended';
+    if (state.includes('shut off') || state.includes('shutoff') || state === 'stopped') return 'stopped';
+    if (state.includes('paused') || state.includes('suspended') || state === 'suspended') return 'suspended';
     if (state.includes('creating') || state.includes('building')) return 'creating';
     return 'error';
   }

@@ -1,3 +1,4 @@
+
 const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
@@ -41,6 +42,25 @@ async function initDatabase() {
           refresh_token TEXT NOT NULL,
           expires_at TIMESTAMP NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Create VMs table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS vms (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL UNIQUE,
+          state TEXT NOT NULL DEFAULT 'stopped',
+          uuid TEXT UNIQUE,
+          os_type TEXT,
+          memory INTEGER,
+          vcpus INTEGER,
+          storage TEXT,
+          user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+          description TEXT,
+          ip_address TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
 

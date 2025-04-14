@@ -1,6 +1,7 @@
 
 const { exec, spawn } = require('child_process');
 const util = require('util');
+const vmDbService = require('./vmDbService');
 
 // Convert exec to Promise-based
 const execPromise = util.promisify(exec);
@@ -16,12 +17,13 @@ class VMService {
    */
   async listVMs(onlyRunning = false) {
     try {
+      // Get live VM state from libvirt
       const command = onlyRunning ? 'virsh list' : 'virsh list --all';
       const { stdout } = await execPromise(command);
       
       // Parse the output to extract VM information
       const lines = stdout.trim().split('\n').slice(2); // Skip header lines
-      const vms = lines.map(line => {
+      const virshVms = lines.map(line => {
         const parts = line.trim().split(/\s+/);
         if (parts.length >= 3) {
           const id = parts[0];
@@ -33,10 +35,47 @@ class VMService {
         return null;
       }).filter(Boolean);
       
-      return vms;
+      // Get VMs from database
+      const dbVms = await vmDbService.getAllVMs(
+        onlyRunning ? { state: 'running' } : {}
+      );
+      
+      // Merge virsh data with database data
+      const mergedVms = virshVms.map(virshVm => {
+        const dbVm = dbVms.find(vm => vm.name === virshVm.name);
+        if (dbVm) {
+          // Update database with current state if different
+          if (dbVm.state !== this._mapStateToDbState(virshVm.state)) {
+            vmDbService.updateVMState(virshVm.name, this._mapStateToDbState(virshVm.state))
+              .catch(err => console.error(`Error updating VM state in DB: ${err.message}`));
+          }
+          
+          return {
+            ...dbVm,
+            id: virshVm.id,
+            state: virshVm.state,
+          };
+        }
+        
+        // If VM is in virsh but not in DB, create a basic record
+        this._createBasicVMRecord(virshVm)
+          .catch(err => console.error(`Error creating basic VM record: ${err.message}`));
+        
+        return virshVm;
+      });
+      
+      return mergedVms;
     } catch (error) {
       console.error('Error listing VMs:', error);
-      throw new Error(`Failed to list VMs: ${error.message}`);
+      
+      // If libvirt fails, try to return data from database
+      try {
+        const dbVms = await vmDbService.getAllVMs();
+        return dbVms;
+      } catch (dbError) {
+        console.error('Error getting VMs from database:', dbError);
+        throw new Error(`Failed to list VMs: ${error.message}`);
+      }
     }
   }
 
@@ -48,6 +87,10 @@ class VMService {
   async startVM(vmName) {
     try {
       const { stdout, stderr } = await execPromise(`virsh start "${vmName}"`);
+      
+      // Update VM state in database
+      await vmDbService.updateVMState(vmName, 'running');
+      
       return {
         success: true,
         message: stdout.trim() || `VM ${vmName} started successfully`,
@@ -67,6 +110,10 @@ class VMService {
   async stopVM(vmName) {
     try {
       const { stdout, stderr } = await execPromise(`virsh destroy "${vmName}"`);
+      
+      // Update VM state in database
+      await vmDbService.updateVMState(vmName, 'stopped');
+      
       return {
         success: true,
         message: stdout.trim() || `VM ${vmName} stopped successfully`,
@@ -86,6 +133,10 @@ class VMService {
   async shutdownVM(vmName) {
     try {
       const { stdout, stderr } = await execPromise(`virsh shutdown "${vmName}"`);
+      
+      // Update VM state in database
+      await vmDbService.updateVMState(vmName, 'shutting down');
+      
       return {
         success: true,
         message: stdout.trim() || `VM ${vmName} is shutting down`,
@@ -111,6 +162,10 @@ class VMService {
       }
       
       const { stdout, stderr } = await execPromise(command);
+      
+      // Delete VM from database
+      await vmDbService.deleteVM(vmName);
+      
       return {
         success: true,
         message: stdout.trim() || `VM ${vmName} deleted successfully`,
@@ -130,6 +185,10 @@ class VMService {
   async restartVM(vmName) {
     try {
       const { stdout, stderr } = await execPromise(`virsh reboot "${vmName}"`);
+      
+      // Update VM state in database
+      await vmDbService.updateVMState(vmName, 'restarting');
+      
       return {
         success: true,
         message: stdout.trim() || `VM ${vmName} is restarting`,
@@ -170,13 +229,56 @@ class VMService {
         }
       });
       
-      return {
+      // Get VM from database for additional info
+      let vmFromDb;
+      try {
+        vmFromDb = await vmDbService.getVMByName(vmName);
+      } catch (dbError) {
+        console.error(`Warning: Could not get VM from database: ${dbError.message}`);
+      }
+      
+      const vmInfo = {
         ...info,
         memory_stats: memStats,
         name: vmName
       };
+      
+      // If VM exists in database, merge with additional info
+      if (vmFromDb) {
+        // Update database with current state if different
+        if (vmFromDb.state !== this._mapStateToDbState(info.state)) {
+          await vmDbService.updateVMState(vmName, this._mapStateToDbState(info.state));
+        }
+        
+        // Add additional info from database
+        vmInfo.description = vmFromDb.description;
+        vmInfo.ip_address = vmFromDb.ip_address;
+        vmInfo.user_id = vmFromDb.user_id;
+        vmInfo.created_at = vmFromDb.created_at;
+        vmInfo.updated_at = vmFromDb.updated_at;
+      } else {
+        // Create basic VM record if it doesn't exist
+        await this._createBasicVMRecord({
+          name: vmName,
+          state: info.state,
+          uuid: info.uuid
+        });
+      }
+      
+      return vmInfo;
     } catch (error) {
       console.error(`Error getting info for VM ${vmName}:`, error);
+      
+      // Try to get VM info from database if libvirt fails
+      try {
+        const vmFromDb = await vmDbService.getVMByName(vmName);
+        if (vmFromDb) {
+          return vmFromDb;
+        }
+      } catch (dbError) {
+        console.error(`Error getting VM from database: ${dbError.message}`);
+      }
+      
       throw new Error(`Failed to get VM info for ${vmName}: ${error.message}`);
     }
   }
@@ -189,6 +291,10 @@ class VMService {
   async suspendVM(vmName) {
     try {
       const { stdout } = await execPromise(`virsh suspend "${vmName}"`);
+      
+      // Update VM state in database
+      await vmDbService.updateVMState(vmName, 'suspended');
+      
       return {
         success: true,
         message: stdout.trim() || `VM ${vmName} suspended successfully`,
@@ -208,6 +314,10 @@ class VMService {
   async resumeVM(vmName) {
     try {
       const { stdout } = await execPromise(`virsh resume "${vmName}"`);
+      
+      // Update VM state in database
+      await vmDbService.updateVMState(vmName, 'running');
+      
       return {
         success: true,
         message: stdout.trim() || `VM ${vmName} resumed successfully`,
@@ -217,6 +327,51 @@ class VMService {
       console.error(`Error resuming VM ${vmName}:`, error);
       throw new Error(`Failed to resume VM ${vmName}: ${error.message}`);
     }
+  }
+  
+  /**
+   * Create a new VM record in the database
+   * @param {Object} vmData - Basic VM data
+   * @private
+   */
+  async _createBasicVMRecord(vmData) {
+    try {
+      // Extract basic info from libvirt data
+      const { name, state, uuid } = vmData;
+      
+      // Create VM record in database
+      await vmDbService.createVM({
+        name,
+        state: this._mapStateToDbState(state),
+        uuid,
+      });
+      
+      console.log(`Created basic VM record for ${name} in database`);
+    } catch (error) {
+      console.error(`Error creating basic VM record for ${vmData.name}:`, error);
+      // Don't throw, this is a background operation
+    }
+  }
+  
+  /**
+   * Map libvirt state to database state
+   * @param {string} virshState - Virsh state string
+   * @returns {string} - Database state
+   * @private
+   */
+  _mapStateToDbState(virshState) {
+    if (!virshState) return 'unknown';
+    
+    const state = virshState.toLowerCase();
+    if (state.includes('running')) return 'running';
+    if (state.includes('shut off') || state.includes('shutoff')) return 'stopped';
+    if (state.includes('paused')) return 'paused';
+    if (state.includes('suspended')) return 'suspended';
+    if (state.includes('crashed')) return 'crashed';
+    if (state.includes('in shutdown')) return 'shutting down';
+    if (state.includes('pmsuspended')) return 'hibernated';
+    
+    return 'unknown';
   }
 }
 
