@@ -1,15 +1,14 @@
-
-const { Pool } = require('pg');
-const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } = require('uuid');
+const { Pool } = require("pg");
+const bcrypt = require("bcrypt");
+const { v4: uuidv4 } = require("uuid");
 
 // Create database connection pool
 const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
+  host: process.env.DB_HOST || "localhost",
   port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'vm_management',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
+  database: process.env.DB_NAME || "vm_management",
+  user: process.env.DB_USER || "postgres",
+  password: process.env.DB_PASSWORD || "postgres",
 });
 
 // Initialize database tables
@@ -17,7 +16,7 @@ async function initDatabase() {
   try {
     // Connect to the database
     const client = await pool.connect();
-    
+
     try {
       // Create users table
       await client.query(`
@@ -46,41 +45,60 @@ async function initDatabase() {
       `);
 
       // Check if admin user exists, if not create default one
-      const adminResult = await client.query("SELECT * FROM users WHERE email = 'admin@example.com'");
-      
+      const adminResult = await client.query(
+        "SELECT * FROM users WHERE email = 'admin@example.com'"
+      );
+
       if (adminResult.rows.length === 0) {
         const salt = bcrypt.genSaltSync(10);
-        const hashedPassword = bcrypt.hashSync('admin123', salt);
+        const hashedPassword = bcrypt.hashSync("admin123", salt);
         const adminId = uuidv4();
-        
+
         await client.query(
           "INSERT INTO users (id, email, password, name, role, department, status) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-          [adminId, 'admin@example.com', hashedPassword, 'Admin User', 'admin', 'IT', 'active']
+          [
+            adminId,
+            "admin@example.com",
+            hashedPassword,
+            "Admin User",
+            "admin",
+            "IT",
+            "active",
+          ]
         );
-        
+
         console.log("Default admin user created successfully");
       }
-      
+
       // Check if student user exists, if not create default one
-      const studentResult = await client.query("SELECT * FROM users WHERE email = 'student@example.com'");
-      
+      const studentResult = await client.query(
+        "SELECT * FROM users WHERE email = 'student@example.com'"
+      );
+
       if (studentResult.rows.length === 0) {
         const salt = bcrypt.genSaltSync(10);
-        const hashedPassword = bcrypt.hashSync('student123', salt);
+        const hashedPassword = bcrypt.hashSync("student123", salt);
         const studentId = uuidv4();
-        
+
         await client.query(
           "INSERT INTO users (id, email, password, name, role, department, status) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-          [studentId, 'student@example.com', hashedPassword, 'Student User', 'student', 'Computer Science', 'active']
+          [
+            studentId,
+            "student@example.com",
+            hashedPassword,
+            "Student User",
+            "student",
+            "Computer Science",
+            "active",
+          ]
         );
-        
+
         console.log("Default student user created successfully");
       }
-      
     } finally {
       client.release();
     }
-    
+
     console.log("Database initialized successfully");
   } catch (error) {
     console.error("Error initializing database:", error);
@@ -99,8 +117,8 @@ async function query(text, params) {
   }
 }
 
-module.exports = { 
+module.exports = {
   pool,
   query,
-  initDatabase
+  initDatabase,
 };

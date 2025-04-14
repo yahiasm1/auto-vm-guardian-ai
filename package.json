@@ -1,15 +1,20 @@
 {
-  "name": "vm-management-system",
+  "name": "vm-guardian-ai",
   "version": "1.0.0",
-  "description": "VM Management System with Express and React",
+  "description": "VM Guardian AI - VM Management System",
+  "main": "index.js",
   "scripts": {
-    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "install:server": "cd server && npm install",
+    "install:client": "cd client && npm install",
+    "install:all": "npm install && npm run install:server && npm run install:client",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev",
-    "start": "cd server && npm start"
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "start": "cd server && npm start",
+    "build": "cd client && npm run build",
+    "build:dev": "cd client && npm run build:dev"
   },
-  "devDependencies": {
-    "concurrently": "^8.2.0"
+  "dependencies": {
+    "concurrently": "^8.2.2"
   }
 }
