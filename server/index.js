@@ -1,3 +1,4 @@
+
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -22,6 +23,7 @@ app.use(morgan("dev"));
 
 // Routes
 app.use("/api/auth", require("./routes/auth"));
+app.use("/api/vm", require("./routes/vm"));
 
 // Basic route for checking server status
 app.get("/api/health", (req, res) => {
