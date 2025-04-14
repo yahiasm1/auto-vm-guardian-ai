@@ -89,7 +89,7 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
     } catch (error: any) {
       console.error(`Error handling ${role} account:`, error);
       
-      // Fix for the TS2304 error - we need to specify the email variable correctly
+      // Properly define the email variable to resolve the TS2304 error
       const emailForError = role === 'admin' ? 'admin@example.com' : 'student@example.com';
       
       if (error.message.includes("already in use")) {
