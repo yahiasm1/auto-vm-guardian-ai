@@ -3,7 +3,7 @@ import React, { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/lib/auth';
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { FiLogOut } from "react-icons/fi";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -47,7 +47,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               onClick={handleLogout}
               className="text-slate-600 hover:text-red-600"
             >
-              <LogOut size={16} />
+              <FiLogOut size={16} />
             </Button>
           </div>
         </div>
