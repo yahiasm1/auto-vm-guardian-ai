@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -24,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useState } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { FiAlertCircle } from 'react-icons/fi';
 
 const formSchema = z.object({
   fullName: z.string().min(2, 'Full name is required'),
@@ -96,7 +95,7 @@ const Register = () => {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {errorMessage && (
               <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md flex items-start">
-                <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                <FiAlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
                 <span>{errorMessage}</span>
               </div>
             )}

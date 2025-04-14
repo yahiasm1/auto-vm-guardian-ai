@@ -6,7 +6,7 @@ import { ResourceUsageChart } from "@/components/Dashboard/ResourceUsageChart";
 import { AiPredictionCard } from "@/components/Dashboard/AiPredictionCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { FiArrowRight } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
 const AdminDashboard = () => {
@@ -43,7 +43,7 @@ const AdminDashboard = () => {
               </h2>
               <Link to="/admin/vms">
                 <Button variant="outline" size="sm" className="flex items-center gap-1">
-                  View All <ArrowRight size={16} />
+                  View All <FiArrowRight size={16} />
                 </Button>
               </Link>
             </div>

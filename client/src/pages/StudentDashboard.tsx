@@ -3,7 +3,7 @@ import React from 'react';
 import { DashboardLayout } from "@/components/Layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Monitor, Power, Cpu, HardDrive, Memory, RotateCw } from "lucide-react";
+import { FiMonitor, FiPower, FiCpu, FiHardDrive, FiMemory, FiRotateCw } from "react-icons/fi";
 import { Progress } from "@/components/ui/progress";
 
 const StudentDashboard = () => {
@@ -50,16 +50,16 @@ const StudentDashboard = () => {
               <CardContent className="p-4">
                 <div className="grid grid-cols-2 gap-2 mb-4 text-sm">
                   <div className="flex items-center">
-                    <Monitor size={16} className="mr-2 text-slate-500" /> {vm.os}
+                    <FiMonitor size={16} className="mr-2 text-slate-500" /> {vm.os}
                   </div>
                   <div className="flex items-center">
-                    <Cpu size={16} className="mr-2 text-slate-500" /> {vm.cpu} CPU cores
+                    <FiCpu size={16} className="mr-2 text-slate-500" /> {vm.cpu} CPU cores
                   </div>
                   <div className="flex items-center">
-                    <Memory size={16} className="mr-2 text-slate-500" /> {vm.ram} GB RAM
+                    <FiMemory size={16} className="mr-2 text-slate-500" /> {vm.ram} GB RAM
                   </div>
                   <div className="flex items-center">
-                    <HardDrive size={16} className="mr-2 text-slate-500" /> {vm.storage} GB
+                    <FiHardDrive size={16} className="mr-2 text-slate-500" /> {vm.storage} GB
                   </div>
                 </div>
 
@@ -84,14 +84,14 @@ const StudentDashboard = () => {
                         className="text-red-600 border-red-200 hover:bg-red-50"
                         onClick={() => handleStopVm(vm.id)}
                       >
-                        <Power size={16} className="mr-2" /> Stop
+                        <FiPower size={16} className="mr-2" /> Stop
                       </Button>
                       <Button 
                         variant="outline" 
                         size="sm"
                         onClick={() => handleRestartVm(vm.id)}
                       >
-                        <RotateCw size={16} className="mr-2" /> Restart
+                        <FiRotateCw size={16} className="mr-2" /> Restart
                       </Button>
                     </>
                   ) : (
@@ -101,7 +101,7 @@ const StudentDashboard = () => {
                       className="text-green-600 border-green-200 hover:bg-green-50"
                       onClick={() => handleStartVm(vm.id)}
                     >
-                      <Power size={16} className="mr-2" /> Start
+                      <FiPower size={16} className="mr-2" /> Start
                     </Button>
                   )}
                   <Button variant="default" size="sm">

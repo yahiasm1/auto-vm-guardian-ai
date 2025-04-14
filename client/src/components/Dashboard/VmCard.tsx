@@ -2,7 +2,7 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Play, Pause, Power, Cpu, HardDrive } from "lucide-react";
+import { FiPlay, FiPause, FiPower, FiCpu, FiHardDrive } from "react-icons/fi";
 
 interface VmProps {
   vm: {
@@ -38,11 +38,11 @@ export const VmCard = ({ vm }: VmProps) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "running":
-        return <Play size={14} className="mr-1" />;
+        return <FiPlay size={14} className="mr-1" />;
       case "stopped":
-        return <Power size={14} className="mr-1" />;
+        return <FiPower size={14} className="mr-1" />;
       case "suspended":
-        return <Pause size={14} className="mr-1" />;
+        return <FiPause size={14} className="mr-1" />;
       default:
         return null;
     }
@@ -67,7 +67,7 @@ export const VmCard = ({ vm }: VmProps) => {
           <Tooltip>
             <TooltipTrigger>
               <div className="inline-flex items-center text-slate-700">
-                <Cpu size={14} className="mr-1" />
+                <FiCpu size={14} className="mr-1" />
                 <span>{vm.cpu} CPU</span>
               </div>
             </TooltipTrigger>
@@ -79,7 +79,7 @@ export const VmCard = ({ vm }: VmProps) => {
           <Tooltip>
             <TooltipTrigger>
               <div className="inline-flex items-center text-slate-700">
-                <HardDrive size={14} className="mr-1" />
+                <FiHardDrive size={14} className="mr-1" />
                 <span>{vm.ram} GB RAM</span>
               </div>
             </TooltipTrigger>
@@ -91,7 +91,7 @@ export const VmCard = ({ vm }: VmProps) => {
           <Tooltip>
             <TooltipTrigger>
               <div className="inline-flex items-center text-slate-700">
-                <HardDrive size={14} className="mr-1" />
+                <FiHardDrive size={14} className="mr-1" />
                 <span>{vm.storage} GB</span>
               </div>
             </TooltipTrigger>

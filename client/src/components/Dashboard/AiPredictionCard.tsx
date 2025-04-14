@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, AlertTriangle, Info } from "lucide-react";
+import { FiAlertCircle, FiAlertTriangle, FiInfo } from "react-icons/fi";
 
 interface Prediction {
   title: string;
@@ -17,13 +17,13 @@ export const AiPredictionCard = ({ predictions }: AiPredictionCardProps) => {
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
       case "alert":
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
+        return <FiAlertCircle className="h-5 w-5 text-red-500" />;
       case "warning":
-        return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+        return <FiAlertTriangle className="h-5 w-5 text-amber-500" />;
       case "info":
-        return <Info className="h-5 w-5 text-blue-500" />;
+        return <FiInfo className="h-5 w-5 text-blue-500" />;
       default:
-        return <Info className="h-5 w-5 text-blue-500" />;
+        return <FiInfo className="h-5 w-5 text-blue-500" />;
     }
   };
 
