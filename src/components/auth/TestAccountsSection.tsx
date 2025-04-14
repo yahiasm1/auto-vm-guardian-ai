@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -15,7 +14,6 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
   const { signIn, signUp } = useAuth();
 
   const fillTestCredentials = (role: 'admin' | 'student') => {
-    // Using the correct emails from your authentication system
     const email = role === 'admin' ? 'admin@example.com' : 'student@example.com';
     const password = role === 'admin' ? 'admin123' : 'student123';
     
@@ -29,8 +27,6 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
       setIsLoading(true);
       setErrorMessage(null);
       
-      // We don't have password reset functionality in our current setup
-      // This is just a placeholder
       toast.info(`Password reset functionality is not available in the current setup.`);
       
     } catch (error: any) {
@@ -67,7 +63,6 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
       setIsLoading(true);
       setErrorMessage(null);
       
-      // Using the correct emails from your authentication system
       const email = role === 'admin' ? 'admin@example.com' : 'student@example.com';
       const password = role === 'admin' ? 'admin123' : 'student123';
       const fullName = role === 'admin' ? 'Admin Test User' : 'Student Test User';
@@ -75,17 +70,14 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
       
       console.log(`Creating/logging in test ${role} account: ${email}`);
       
-      // First try to login - if the account exists, this should work
       const loginSuccess = await loginWithTestAccount(email, password);
       
       if (loginSuccess) {
-        // User successfully logged in, no need to create an account
         return;
       }
       
       console.log('Login failed, attempting to create account');
       
-      // If login failed, try to create a new account
       await signUp(email, password, fullName, role, department);
       
       toast.success(`Test ${role} account created! You can now sign in.`);
@@ -96,7 +88,6 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
     } catch (error: any) {
       console.error(`Error handling ${role} account:`, error);
       
-      // Better error handling for common issues
       if (error.message.includes("already in use")) {
         setErrorMessage(`Account ${email} exists but password may be different. Try the reset password option.`);
       } else {
