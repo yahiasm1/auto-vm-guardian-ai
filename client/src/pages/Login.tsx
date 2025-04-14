@@ -1,50 +1,26 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import LoginForm from '@/components/auth/LoginForm';
-import TestAccountsSection from '@/components/auth/TestAccountsSection';
+import { LoginForm } from '@/components/auth/LoginForm';
+import { TestAccountsSection } from '@/components/auth/TestAccountsSection';
 
-const Login: React.FC = () => {
-  const navigate = useNavigate();
-  const [emailValue, setEmailValue] = useState('');
-  const [passwordValue, setPasswordValue] = useState('');
-
-  const handleSetCredentials = (email: string, password: string) => {
-    setEmailValue(email);
-    setPasswordValue(password);
-  };
-
-  const handleLoginSuccess = () => {
-    navigate('/admin');
-  };
-
+const Login = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Login</CardTitle>
-          <CardDescription>
-            Log in to access the VM Management System
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <LoginForm onSuccess={handleLoginSuccess} />
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <a
-                href="/register"
-                className="text-primary font-semibold hover:underline"
-              >
-                Register
-              </a>
-            </p>
-          </div>
-          
-          <TestAccountsSection onSetCredentials={handleSetCredentials} />
-        </CardContent>
-      </Card>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
+      <div className="w-full max-w-md">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-vmSystem-blue dark:text-vmSystem-blue-light">
+            Sign in to VM Guardian
+          </h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+            Enter your credentials to access your account
+          </p>
+        </div>
+        
+        <LoginForm />
+        
+        <div className="mt-8">
+          <TestAccountsSection />
+        </div>
+      </div>
     </div>
   );
 };

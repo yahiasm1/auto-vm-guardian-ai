@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { Toaster as UIToaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { AuthProvider } from '@/lib/auth/AuthProvider';
+import { AuthProvider } from '@/lib/auth';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 // Import pages

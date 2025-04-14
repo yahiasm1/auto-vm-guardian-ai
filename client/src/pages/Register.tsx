@@ -1,39 +1,34 @@
 
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
-const Register: React.FC = () => {
-  const navigate = useNavigate();
-  
+const Register = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Register</CardTitle>
-          <CardDescription>
-            Create an account for the VM Management System
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="mb-4">Registration functionality will be implemented soon.</p>
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Already have an account?{' '}
-              <a
-                href="/login"
-                className="text-primary font-semibold hover:underline"
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate('/login');
-                }}
-              >
-                Login
-              </a>
-            </p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
+      <div className="w-full max-w-md">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-vmSystem-blue dark:text-vmSystem-blue-light">
+            Create an Account
+          </h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+            Register for VM Guardian
+          </p>
+        </div>
+        
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-6">
+          <p className="text-center mb-6 text-slate-600 dark:text-slate-400">
+            Registration is currently available through your institution's administrator.
+          </p>
+          
+          <div className="flex flex-col space-y-4">
+            <Link to="/login">
+              <Button className="w-full" variant="outline">
+                Back to Login
+              </Button>
+            </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
