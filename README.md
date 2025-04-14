@@ -1,73 +1,77 @@
-# Welcome to your Lovable project
 
-## Project info
+# VM Management System
 
-**URL**: https://lovable.dev/projects/f0f22051-c8e5-4bcd-8d06-845dcc7e7c26
+A complete solution for virtual machine management in educational environments.
 
-## How can I edit this code?
+## Project Structure
 
-There are several ways of editing your application.
+The project is organized into two main directories:
+- `client`: Frontend React application
+- `server`: Backend Express.js server
 
-**Use Lovable**
+## Getting Started
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/f0f22051-c8e5-4bcd-8d06-845dcc7e7c26) and start prompting.
+### Prerequisites
 
-Changes made via Lovable will be committed automatically to this repo.
+- Node.js 16+
+- npm 8+
 
-**Use your preferred IDE**
+### Installation
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. Install dependencies for both client and server:
+```
+npm install
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+This will install dependencies for both the client and server projects.
 
-Follow these steps:
+### Development
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+To run both client and server in development mode:
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+This will start:
+- Client at http://localhost:8080
+- Server at http://localhost:5000
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Building for Production
 
-**Use GitHub Codespaces**
+To build the client:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+npm run build:client
+```
 
-## What technologies are used for this project?
+The build output will be in `client/dist`.
 
-This project is built with:
+### Running in Production
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+To start the server in production:
 
-## How can I deploy this project?
+```
+npm start
+```
 
-Simply open [Lovable](https://lovable.dev/projects/f0f22051-c8e5-4bcd-8d06-845dcc7e7c26) and click on Share -> Publish.
+## Environment Variables
 
-## Can I connect a custom domain to my Lovable project?
+### Server Environment
 
-Yes it is!
+Create a `.env` file in the server directory with the following variables:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```
+PORT=5000
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=1d
+CLIENT_URL=http://localhost:8080
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Client Environment
+
+Create a `.env` file in the client directory with the following variables:
+
+```
+VITE_API_URL=http://localhost:5000/api
+```
