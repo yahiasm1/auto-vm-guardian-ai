@@ -1,4 +1,5 @@
 
+import React from "react";
 import { DashboardLayout } from "@/components/Layout/DashboardLayout";
 import { StatusOverview } from "@/components/Dashboard/StatusOverview";
 import { VmCard } from "@/components/Dashboard/VmCard";
@@ -43,7 +44,7 @@ const AdminDashboard = () => {
               </h2>
               <Link to="/admin/vms">
                 <Button variant="outline" size="sm" className="flex items-center gap-1">
-                  View All {React.createElement(FiArrowRight, { size: 16 })}
+                  View All <FiArrowRight size={16} />
                 </Button>
               </Link>
             </div>

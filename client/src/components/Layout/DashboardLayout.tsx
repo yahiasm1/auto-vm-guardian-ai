@@ -26,7 +26,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
-      {/* Header */}
       <header className="bg-white dark:bg-slate-800 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-vmSystem-blue dark:text-vmSystem-blue-light">
@@ -47,13 +46,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               onClick={handleLogout}
               className="text-slate-600 hover:text-red-600"
             >
-              {React.createElement(FiLogOut, { size: 16 })}
+              <FiLogOut size={16} />
             </Button>
           </div>
         </div>
       </header>
       
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h2>
