@@ -2,33 +2,14 @@
 import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
 import { toast } from 'sonner';
 import { authService } from '@/services/api';
-
-// Define types
-interface User {
-  id: string;
-  email: string;
-  role: string;
-  name: string;
-}
-
-export interface AuthContextProps {
-  user: User | null;
-  profile: any | null;
-  session: null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string, fullName: string, role: string, department?: string) => Promise<any>;
-  signOut: () => Promise<void>;
-  signInWithOAuth: () => Promise<void>;
-}
+import { User, AuthContextType } from './types';
 
 // Create authentication context
-const AuthContext = createContext<AuthContextProps | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // User provider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Load user on initialization
@@ -40,7 +21,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           if (userData) {
             setUser(userData);
-            setProfile(userData); // Using the same user data for profile
           }
         }
       } catch (error) {
@@ -62,7 +42,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await authService.login(email, password);
       
       setUser(data.user);
-      setProfile(data.user); // Using the same user data for profile
       
       console.log('Login successful:', data.user.email);
       toast.success('Login successful');
@@ -86,12 +65,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Sign up function
-  const signUp = async (email: string, password: string, fullName: string, role: string, department: string) => {
+  const signUp = async (email: string, password: string, name: string, role: string, department?: string) => {
     try {
       setLoading(true);
-      console.log('Signing up user:', { email, fullName, role });
+      console.log('Signing up user:', { email, name, role });
       
-      const data = await authService.register(email, password, fullName, role, department);
+      const data = await authService.register(email, password, name, role, department);
       
       toast.success('Registration successful! You can now sign in.');
       return data;
@@ -119,7 +98,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await authService.logout();
       
       setUser(null);
-      setProfile(null);
       
       toast.success('Logged out successfully');
     } catch (error: any) {
@@ -133,15 +111,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={{
       user,
-      profile,
-      session: null, // We don't use Supabase session anymore
       loading,
       signIn,
       signOut,
-      signUp,
-      signInWithOAuth: async () => {
-        toast.error('OAuth sign in is not supported with this configuration');
-      }
+      signUp
     }}>
       {children}
     </AuthContext.Provider>

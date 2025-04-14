@@ -66,7 +66,7 @@ exports.login = async (req, res) => {
     await query("UPDATE users SET last_active = CURRENT_TIMESTAMP WHERE id = $1", [user.id]);
     
     // Create tokens
-    const accessToken = jwt.sign(
+    const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '15m' }
@@ -99,7 +99,7 @@ exports.login = async (req, res) => {
     const { password: _, ...userWithoutPassword } = user;
     res.json({
       user: userWithoutPassword,
-      accessToken
+      token
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -145,7 +145,7 @@ exports.refreshToken = async (req, res) => {
         const user = userResult.rows[0];
         
         // Generate new access token
-        const accessToken = jwt.sign(
+        const token = jwt.sign(
           { id: user.id, role: user.role },
           process.env.JWT_SECRET || 'your_jwt_secret',
           { expiresIn: '15m' }
@@ -154,7 +154,7 @@ exports.refreshToken = async (req, res) => {
         const { password, ...userWithoutPassword } = user;
         res.json({
           user: userWithoutPassword,
-          accessToken
+          token
         });
       }
     );

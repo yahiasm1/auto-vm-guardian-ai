@@ -4,21 +4,21 @@ import { useAuth } from '@/lib/auth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'admin' | 'instructor' | 'student';
+  requiredRole?: string;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
   requiredRole 
 }) => {
-  const { user, profile, loading } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
 
   // If still loading authentication status, display nothing yet
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-vmSystem-blue"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-blue-600"></div>
       </div>
     );
   }
@@ -29,11 +29,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
   
   // If specific role is required and user doesn't have it
-  if (requiredRole && profile && profile.role !== requiredRole) {
+  if (requiredRole && user.role !== requiredRole) {
     // Redirect based on user's role
-    if (profile.role === 'admin') {
+    if (user.role === 'admin') {
       return <Navigate to="/admin" replace />;
-    } else if (profile.role === 'student' || profile.role === 'instructor') {
+    } else if (user.role === 'student') {
       return <Navigate to="/student" replace />;
     } else {
       return <Navigate to="/" replace />;
