@@ -1,6 +1,6 @@
 
 import { Card, CardContent } from "@/components/ui/card";
-import { serverIcon, vmIcon, storageIcon, userIcon } from "@/lib/icons";
+import { ServerIcon, VMIcon, StorageIcon, UserIcon } from "@/lib/icons";
 
 interface StatusOverviewProps {
   stats: {
@@ -16,25 +16,25 @@ export const StatusOverview = ({ stats }: StatusOverviewProps) => {
     {
       name: "Total VMs",
       value: stats.totalVms,
-      icon: vmIcon,
+      icon: <VMIcon />,
       className: "bg-blue-50 text-blue-600",
     },
     {
       name: "Running VMs",
       value: stats.runningVms,
-      icon: serverIcon,
+      icon: <ServerIcon />,
       className: "bg-green-50 text-green-600",
     },
     {
       name: "Storage Used",
       value: `${stats.storageUsed} TB`,
-      icon: storageIcon,
+      icon: <StorageIcon />,
       className: "bg-purple-50 text-purple-600",
     },
     {
       name: "Active Users",
       value: stats.activeUsers,
-      icon: userIcon,
+      icon: <UserIcon />,
       className: "bg-amber-50 text-amber-600",
     },
   ];

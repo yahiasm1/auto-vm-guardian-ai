@@ -2,14 +2,11 @@
 import { FiServer, FiMonitor, FiHardDrive, FiUsers } from 'react-icons/fi';
 import React from 'react';
 
-// Server/VM icon component
-export const serverIcon = <FiServer size={18} />;
+// Helper function to create icon components
+export const ServerIcon = ({ size = 18 }: { size?: number }) => <FiServer size={size} />;
 
-// VM icon component
-export const vmIcon = <FiMonitor size={18} />;
+export const VMIcon = ({ size = 18 }: { size?: number }) => <FiMonitor size={size} />;
 
-// Storage icon component
-export const storageIcon = <FiHardDrive size={18} />;
+export const StorageIcon = ({ size = 18 }: { size?: number }) => <FiHardDrive size={size} />;
 
-// User icon component
-export const userIcon = <FiUsers size={18} />;
+export const UserIcon = ({ size = 18 }: { size?: number }) => <FiUsers size={size} />;
