@@ -30,8 +30,6 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
-          <UIToaster />
-          <Toaster position="top-right" richColors />
           <Router>
             <Routes>
               {/* Public routes */}
@@ -56,6 +54,8 @@ function App() {
               <Route path="*" element={<Navigate to="/404" replace />} />
             </Routes>
           </Router>
+          <UIToaster />
+          <Toaster position="top-right" richColors />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>

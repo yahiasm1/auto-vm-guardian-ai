@@ -16,25 +16,25 @@ export const StatusOverview = ({ stats }: StatusOverviewProps) => {
     {
       name: "Total VMs",
       value: stats.totalVms,
-      icon: <VMIcon />,
+      icon: <VMIcon size={18} />,
       className: "bg-blue-50 text-blue-600",
     },
     {
       name: "Running VMs",
       value: stats.runningVms,
-      icon: <ServerIcon />,
+      icon: <ServerIcon size={18} />,
       className: "bg-green-50 text-green-600",
     },
     {
       name: "Storage Used",
       value: `${stats.storageUsed} TB`,
-      icon: <StorageIcon />,
+      icon: <StorageIcon size={18} />,
       className: "bg-purple-50 text-purple-600",
     },
     {
       name: "Active Users",
       value: stats.activeUsers,
-      icon: <UserIcon />,
+      icon: <UserIcon size={18} />,
       className: "bg-amber-50 text-amber-600",
     },
   ];
