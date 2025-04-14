@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -88,8 +89,11 @@ const TestAccountsSection = ({ onSetCredentials }: TestAccountsSectionProps) => 
     } catch (error: any) {
       console.error(`Error handling ${role} account:`, error);
       
+      // Fix for the TS2304 error - we need to specify the email variable correctly
+      const emailForError = role === 'admin' ? 'admin@example.com' : 'student@example.com';
+      
       if (error.message.includes("already in use")) {
-        setErrorMessage(`Account ${email} exists but password may be different. Try the reset password option.`);
+        setErrorMessage(`Account ${emailForError} exists but password may be different. Try the reset password option.`);
       } else {
         setErrorMessage(`Operation failed: ${error.message}`);
       }
