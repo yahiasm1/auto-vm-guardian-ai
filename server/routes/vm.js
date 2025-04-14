@@ -12,6 +12,14 @@ router.get(
   vmController.listVMs
 );
 
+// Create a new VM - admin only
+router.post(
+  "/create",
+  authenticateToken,
+  authorizeRoles(["admin"]),
+  vmController.createVM
+);
+
 // Get VM info
 router.get("/:vmName", authenticateToken, vmController.getVMInfo);
 

@@ -1,4 +1,3 @@
-
 const { exec, spawn } = require('child_process');
 const util = require('util');
 const vmDbService = require('./vmDbService');
@@ -328,7 +327,103 @@ class VMService {
       throw new Error(`Failed to resume VM ${vmName}: ${error.message}`);
     }
   }
-  
+
+  /**
+   * Create a new VM
+   * @param {Object} vmData - VM configuration data
+   * @returns {Promise<Object>} - Created VM details
+   */
+  async createVM(vmData) {
+    try {
+      const {
+        name,
+        memory = 1024, // Default 1GB RAM
+        vcpus = 1,     // Default 1 vCPU
+        storage = 10,  // Default 10GB storage
+        os_type = 'linux',
+        iso_path,      // Path to installation ISO
+        description,
+        user_id
+      } = vmData;
+      
+      if (!name) {
+        throw new Error('VM name is required');
+      }
+      
+      // Check if VM with this name already exists
+      try {
+        const checkResult = await execPromise(`virsh dominfo "${name}"`);
+        throw new Error(`VM with name "${name}" already exists`);
+      } catch (checkError) {
+        // VM doesn't exist, we can proceed
+        if (!checkError.message.includes('failed to get domain')) {
+          throw checkError;
+        }
+      }
+      
+      // First create VM record in database to track progress
+      const dbVm = await vmDbService.createVM({
+        name,
+        state: 'creating',
+        memory,
+        vcpus,
+        storage: `${storage}`,
+        os_type,
+        description,
+        user_id
+      });
+      
+      // Build virt-install command
+      let virtInstallCmd = `virt-install --name="${name}" --memory=${memory} --vcpus=${vcpus} --os-variant=${os_type}`;
+      
+      // Add disk configuration
+      virtInstallCmd += ` --disk size=${storage}`;
+      
+      // Add installation source (ISO or network)
+      if (iso_path) {
+        virtInstallCmd += ` --cdrom=${iso_path}`;
+      } else {
+        // Use a default minimal installation or provide network install option
+        virtInstallCmd += ` --location=http://ftp.us.debian.org/debian/dists/stable/main/installer-amd64/`;
+      }
+      
+      // Add graphics and console options
+      virtInstallCmd += ` --graphics=vnc --noautoconsole`;
+      
+      // Execute VM creation
+      console.log(`Creating VM with command: ${virtInstallCmd}`);
+      
+      // In a real application, we might want to use spawn for a long-running process
+      // but for simplicity, we'll use exec with a longer timeout
+      const { stdout, stderr } = await execPromise(virtInstallCmd, { timeout: 30000 });
+      
+      // Update VM state in database
+      await vmDbService.updateVMState(name, 'stopped');
+      
+      // Fetch complete VM info
+      const vmInfo = await this.getVMInfo(name);
+      
+      return {
+        success: true,
+        message: `VM ${name} created successfully`,
+        vm: vmInfo
+      };
+    } catch (error) {
+      console.error('Error creating VM:', error);
+      
+      // If VM creation failed but DB record was created, update state to 'error'
+      if (vmData.name) {
+        try {
+          await vmDbService.updateVMState(vmData.name, 'error');
+        } catch (dbError) {
+          console.error('Error updating VM state after failed creation:', dbError);
+        }
+      }
+      
+      throw new Error(`Failed to create VM: ${error.message}`);
+    }
+  }
+
   /**
    * Create a new VM record in the database
    * @param {Object} vmData - Basic VM data
@@ -352,7 +447,7 @@ class VMService {
       // Don't throw, this is a background operation
     }
   }
-  
+
   /**
    * Map libvirt state to database state
    * @param {string} virshState - Virsh state string

@@ -1,4 +1,3 @@
-
 const vmService = require('../services/vmService');
 const vmDbService = require('../services/vmDbService');
 
@@ -21,6 +20,28 @@ const vmController = {
       res.status(500).json({
         success: false,
         message: error.message || "Failed to retrieve VM list",
+      });
+    }
+  },
+
+  /**
+   * Create a new VM
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  async createVM(req, res) {
+    try {
+      const vmData = req.body;
+      // Add the user who created the VM
+      vmData.user_id = req.user.id;
+      
+      const result = await vmService.createVM(vmData);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Error creating VM:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to create VM",
       });
     }
   },

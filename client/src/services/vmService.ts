@@ -33,6 +33,16 @@ export interface VMOperationResult {
   vm?: VM;
 }
 
+export interface CreateVMPayload {
+  name: string;
+  memory?: number; // in MB
+  vcpus?: number;
+  storage?: number; // in GB
+  os_type?: string;
+  iso_path?: string;
+  description?: string;
+}
+
 export const vmService = {
   /**
    * Get a list of all VMs
@@ -47,6 +57,14 @@ export const vmService = {
       ...vm,
       status: this.mapStateToStatus(vm.state)
     }));
+  },
+  
+  /**
+   * Create a new VM
+   */
+  async createVM(vmData: CreateVMPayload): Promise<VMOperationResult> {
+    const response = await api.post(`/vm/create`, vmData);
+    return response.data;
   },
   
   /**
