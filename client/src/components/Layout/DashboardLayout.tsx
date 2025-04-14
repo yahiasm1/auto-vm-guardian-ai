@@ -47,7 +47,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               onClick={handleLogout}
               className="text-slate-600 hover:text-red-600"
             >
-              <FiLogOut size={16} />
+              {React.createElement(FiLogOut, { size: 16 })}
             </Button>
           </div>
         </div>

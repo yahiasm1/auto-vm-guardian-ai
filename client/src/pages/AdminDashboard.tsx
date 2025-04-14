@@ -43,7 +43,7 @@ const AdminDashboard = () => {
               </h2>
               <Link to="/admin/vms">
                 <Button variant="outline" size="sm" className="flex items-center gap-1">
-                  View All <FiArrowRight size={16} />
+                  View All {React.createElement(FiArrowRight, { size: 16 })}
                 </Button>
               </Link>
             </div>
