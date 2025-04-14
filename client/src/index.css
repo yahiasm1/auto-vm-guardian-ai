@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -31,7 +30,7 @@
     --sidebar-accent: 210 40% 96.1%;
     --sidebar-accent-foreground: 222.2 47.4% 11.2%;
     --sidebar-ring: 221.2 83.2% 53.3%;
-    
+
     /* VM System Theme Colors */
     --vmSystem-blue: #0369a1;
     --vmSystem-blue-light: #38bdf8;
@@ -39,7 +38,7 @@
     --vmSystem-teal: #14b8a6;
     --vmSystem-teal-light: #5eead4;
     --vmSystem-teal-dark: #0f766e;
-    
+
     /* VM Status Colors */
     --vm-running: #22c55e;
     --vm-stopped: #64748b;
@@ -47,7 +46,7 @@
     --vm-creating: #38bdf8;
     --vm-error: #ef4444;
   }
- 
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -76,7 +75,7 @@
     --sidebar-ring: 224.3 76.3% 48%;
   }
 }
- 
+
 @layer base {
   * {
     @apply border-border;
@@ -94,6 +93,6 @@
 
 /* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
