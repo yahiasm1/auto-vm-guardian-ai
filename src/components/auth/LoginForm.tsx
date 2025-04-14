@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth';
-import { supabase } from '@/integrations/supabase/client';
 
 import {
   Form,
@@ -49,24 +48,9 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       setErrorMessage(null);
       console.log("Attempting login with:", values.email);
       
-      // Try direct Supabase login if the context method fails
-      try {
-        // First try with auth context's signIn method
-        await signIn(values.email, values.password);
-      } catch (contextError: any) {
-        console.error('Context signIn failed, trying direct Supabase login:', contextError);
-        
-        // If context method fails, try direct Supabase login
-        const { error } = await supabase.auth.signInWithPassword({
-          email: values.email,
-          password: values.password,
-        });
-        
-        if (error) throw error;
-      }
+      await signIn(values.email, values.password);
       
       console.log("Login successful");
-      toast.success('Login successful');
       onSuccess?.();
     } catch (error: any) {
       console.error('Login error:', error);
@@ -74,15 +58,6 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
       let errorMsg = 'Failed to login. Please check your credentials and try again.';
       if (error.message) {
         errorMsg = error.message;
-        
-        // Check for common Supabase errors
-        if (errorMsg.includes('Invalid login credentials')) {
-          errorMsg = 'Invalid email or password. Please try again or create an account if you don\'t have one.';
-        } else if (errorMsg.includes('Email not confirmed')) {
-          errorMsg = 'Email not confirmed. Please check your email for a confirmation link.';
-        } else if (errorMsg.includes('rate limit')) {
-          errorMsg = 'Too many login attempts. Please try again later.';
-        }
       }
       
       setErrorMessage(errorMsg);
