@@ -1,30 +1,32 @@
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'sonner';
-import { Toaster as UIToaster } from '@/components/ui/toaster';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { AuthProvider } from '@/lib/auth';
-import ProtectedRoute from '@/components/ProtectedRoute';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-// Import pages
-import Index from '@/pages/Index';
-import Login from '@/pages/Login';
-import Register from '@/pages/Register';
-import AdminDashboard from '@/pages/AdminDashboard';
-import AdminVMsPage from '@/pages/AdminVMs';
-import AdminVMRequestsPage from '@/pages/AdminVMRequests';
-import StudentDashboard from '@/pages/StudentDashboard';
-import StudentVMsPage from '@/pages/StudentVMs';
-import StudentVMRequestsPage from '@/pages/StudentVMRequests';
-import NotFound from '@/pages/NotFound';
+// Pages
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import NotFound from "@/pages/NotFound";
+import IndexPage from "@/pages/Index";
 
-// Create a client for React Query
+// Admin Pages
+import AdminDashboard from "@/pages/AdminDashboard";
+import AdminVMsPage from "@/pages/AdminVMs";
+import AdminVMRequests from "@/pages/AdminVMRequests";
+import AdminUsersPage from "@/pages/AdminUsers";
+
+// Student Pages
+import StudentDashboard from "@/pages/StudentDashboard";
+import StudentVMsPage from "@/pages/StudentVMs";
+import StudentVMRequests from "@/pages/StudentVMRequests";
+
+// Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
       retry: 1,
+      refetchOnWindowFocus: false,
     },
   },
 });
@@ -32,73 +34,37 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Router>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<IndexPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-              {/* Protected admin routes */}
-              <Route path="/admin" element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/vms" element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminVMsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/requests" element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminVMRequestsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/users" element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/settings" element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={<ProtectedRoute allowedRoles={["admin"]} />}
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="vms" element={<AdminVMsPage />} />
+            <Route path="vm-requests" element={<AdminVMRequests />} />
+            <Route path="users" element={<AdminUsersPage />} />
+          </Route>
 
-              {/* Protected student routes */}
-              <Route path="/student" element={
-                <ProtectedRoute requiredRole="student">
-                  <StudentDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/student/vms" element={
-                <ProtectedRoute requiredRole="student">
-                  <StudentVMsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/student/requests" element={
-                <ProtectedRoute requiredRole="student">
-                  <StudentVMRequestsPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/student/settings" element={
-                <ProtectedRoute requiredRole="student">
-                  <StudentDashboard />
-                </ProtectedRoute>
-              } />
+          {/* Student Routes */}
+          <Route
+            path="/student"
+            element={<ProtectedRoute allowedRoles={["student"]} />}
+          >
+            <Route index element={<StudentDashboard />} />
+            <Route path="vms" element={<StudentVMsPage />} />
+            <Route path="vm-requests" element={<StudentVMRequests />} />
+          </Route>
 
-              {/* Fallback routes */}
-              <Route path="/404" element={<NotFound />} />
-              <Route path="*" element={<Navigate to="/404" replace />} />
-            </Routes>
-          </Router>
-          <UIToaster />
-          <Toaster position="top-right" richColors />
-        </TooltipProvider>
-      </AuthProvider>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+      <Toaster />
     </QueryClientProvider>
   );
 }

@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import vmService, { CreateVMPayload } from "@/services/vmService";
-import api from "@/services/api";
+import userService from "@/services/userService";
 
 // Form schema validation
 const vmFormSchema = z.object({
@@ -51,13 +51,6 @@ interface AddVMModalProps {
   onVMAdded: () => void;
 }
 
-interface User {
-  id: string;
-  full_name?: string;
-  email: string;
-  role: string;
-}
-
 export const AddVMModal: React.FC<AddVMModalProps> = ({ 
   isOpen, 
   onClose,
@@ -70,8 +63,7 @@ export const AddVMModal: React.FC<AddVMModalProps> = ({
     queryKey: ['users'],
     queryFn: async () => {
       try {
-        const response = await api.get('/users');
-        return response.data.users || [];
+        return await userService.getUsers();
       } catch (error) {
         console.error("Failed to fetch users:", error);
         return [];
@@ -107,6 +99,7 @@ export const AddVMModal: React.FC<AddVMModalProps> = ({
       form.reset();
       onVMAdded();
       onClose();
+      toast.success("VM created successfully");
     } catch (error) {
       console.error("Error creating VM:", error);
       toast.error("Failed to create VM: " + (error as Error).message);
@@ -225,11 +218,11 @@ export const AddVMModal: React.FC<AddVMModalProps> = ({
                       {loadingUsers ? (
                         <SelectItem value="" disabled>Loading users...</SelectItem>
                       ) : (
-                        users?.filter((user: User) => 
+                        users?.filter(user => 
                           user.role === 'student' || user.role === 'instructor'
-                        ).map((user: User) => (
+                        ).map(user => (
                           <SelectItem key={user.id} value={user.id}>
-                            {user.full_name || user.email} ({user.role})
+                            {user.name || user.email} ({user.role})
                           </SelectItem>
                         ))
                       )}
@@ -273,4 +266,3 @@ export const AddVMModal: React.FC<AddVMModalProps> = ({
     </Dialog>
   );
 };
-
