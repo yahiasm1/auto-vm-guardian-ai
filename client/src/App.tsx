@@ -12,8 +12,10 @@ import Index from '@/pages/Index';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import AdminDashboard from '@/pages/AdminDashboard';
-import StudentDashboard from '@/pages/StudentDashboard';
+import AdminVMsPage from '@/pages/AdminVMs';
 import AdminVMRequestsPage from '@/pages/AdminVMRequests';
+import StudentDashboard from '@/pages/StudentDashboard';
+import StudentVMsPage from '@/pages/StudentVMs';
 import StudentVMRequestsPage from '@/pages/StudentVMRequests';
 import NotFound from '@/pages/NotFound';
 
@@ -45,6 +47,11 @@ function App() {
                   <AdminDashboard />
                 </ProtectedRoute>
               } />
+              <Route path="/admin/vms" element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminVMsPage />
+                </ProtectedRoute>
+              } />
               <Route path="/admin/requests" element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminVMRequestsPage />
@@ -60,11 +67,6 @@ function App() {
                   <AdminDashboard />
                 </ProtectedRoute>
               } />
-              <Route path="/admin/vms" element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
 
               {/* Protected student routes */}
               <Route path="/student" element={
@@ -74,7 +76,7 @@ function App() {
               } />
               <Route path="/student/vms" element={
                 <ProtectedRoute requiredRole="student">
-                  <StudentDashboard />
+                  <StudentVMsPage />
                 </ProtectedRoute>
               } />
               <Route path="/student/requests" element={
