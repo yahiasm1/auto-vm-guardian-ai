@@ -1,4 +1,6 @@
+
 const vmService = require('../services/vmService');
+const vmDbService = require('../services/vmDbService');
 const db = require('../db/database');
 
 /**
@@ -22,6 +24,93 @@ class VMController {
       return res.status(500).json({
         success: false,
         message: error.message || 'Failed to list VMs'
+      });
+    }
+  }
+  
+  /**
+   * Get dashboard data for admin
+   */
+  async getDashboardData(req, res) {
+    try {
+      // Get total VMs count
+      const vmCountResult = await db.query('SELECT COUNT(*) FROM vms');
+      const totalVms = parseInt(vmCountResult.rows[0].count);
+      
+      // Get running VMs count
+      const runningVmCountResult = await db.query("SELECT COUNT(*) FROM vms WHERE state LIKE '%running%'");
+      const runningVms = parseInt(runningVmCountResult.rows[0].count);
+      
+      // Get total storage used (in GB)
+      const storageResult = await db.query('SELECT COALESCE(SUM(NULLIF(storage, \'\')::numeric), 0) as total FROM vms');
+      const storageUsedGB = parseFloat(storageResult.rows[0].total) || 0;
+      const storageUsedTB = (storageUsedGB / 1024).toFixed(2);
+      
+      // Get active users count
+      const activeUsersResult = await db.query("SELECT COUNT(*) FROM users WHERE last_active > NOW() - INTERVAL '30 days'");
+      const activeUsers = parseInt(activeUsersResult.rows[0].count);
+      
+      // Get recent VMs (last 5)
+      const recentVmsResult = await db.query(
+        'SELECT * FROM vms ORDER BY created_at DESC LIMIT 5'
+      );
+      
+      // Calculate resource usage
+      const resourceStats = {
+        cpu: { used: 0, total: 100 }, // Default values - replace with actual monitoring data
+        ram: { used: 0, total: 64 },  // Default values - replace with actual monitoring data
+        storage: { used: storageUsedTB, total: 2 }
+      };
+      
+      // Calculate CPU and RAM usage based on VM allocations
+      const resourceAllocationResult = await db.query('SELECT SUM(vcpus) as total_cpu, SUM(memory) as total_memory FROM vms WHERE state LIKE \'%running%\'');
+      if (resourceAllocationResult.rows[0].total_cpu) {
+        resourceStats.cpu.used = parseInt(resourceAllocationResult.rows[0].total_cpu);
+      }
+      
+      if (resourceAllocationResult.rows[0].total_memory) {
+        resourceStats.ram.used = Math.round(parseInt(resourceAllocationResult.rows[0].total_memory) / 1024); // Convert MB to GB
+      }
+      
+      return res.json({
+        success: true,
+        stats: {
+          totalVms,
+          runningVms,
+          storageUsed: parseFloat(storageUsedTB),
+          activeUsers
+        },
+        recentVms: recentVmsResult.rows,
+        resourceStats
+      });
+    } catch (error) {
+      console.error('Error getting dashboard data:', error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get dashboard data'
+      });
+    }
+  }
+  
+  /**
+   * Get recent VM requests (admin only)
+   */
+  async getRecentVMRequests(req, res) {
+    try {
+      // Get recent VM requests (last 5)
+      const recentRequestsResult = await db.query(
+        'SELECT * FROM vm_requests ORDER BY created_at DESC LIMIT 5'
+      );
+      
+      return res.json({
+        success: true,
+        requests: recentRequestsResult.rows
+      });
+    } catch (error) {
+      console.error('Error getting recent VM requests:', error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get recent VM requests'
       });
     }
   }

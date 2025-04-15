@@ -1,4 +1,3 @@
-
 import api from './api';
 
 export interface VM {
@@ -73,6 +72,21 @@ export interface VMRequest {
   response_message?: string;
 }
 
+export interface DashboardData {
+  stats: {
+    totalVms: number;
+    runningVms: number;
+    storageUsed: number;
+    activeUsers: number;
+  };
+  recentVms: VM[];
+  resourceStats: {
+    cpu: { used: number; total: number };
+    ram: { used: number; total: number };
+    storage: { used: number; total: number };
+  };
+}
+
 export const vmService = {
   /**
    * Get a list of all VMs
@@ -87,6 +101,31 @@ export const vmService = {
       ...vm,
       status: this.mapStateToStatus(vm.state)
     }));
+  },
+  
+  /**
+   * Get admin dashboard data
+   */
+  async getDashboardData(): Promise<DashboardData> {
+    const response = await api.get(`/vms/dashboard-data`);
+    
+    // Map the raw VM state to status for recent VMs
+    if (response.data.recentVms && Array.isArray(response.data.recentVms)) {
+      response.data.recentVms = response.data.recentVms.map((vm: VM) => ({
+        ...vm,
+        status: this.mapStateToStatus(vm.state)
+      }));
+    }
+    
+    return response.data;
+  },
+  
+  /**
+   * Get recent VM requests for admin dashboard
+   */
+  async getRecentVMRequests(): Promise<VMRequest[]> {
+    const response = await api.get(`/vms/recent-requests`);
+    return response.data.requests;
   },
   
   /**

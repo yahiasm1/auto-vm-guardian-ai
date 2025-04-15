@@ -19,6 +19,14 @@ router.get(
   vmController.getMyVMs
 );
 
+// Get recent VMs and resource stats for admin dashboard
+router.get(
+  "/dashboard-data",
+  authenticateToken,
+  authorizeRoles(["admin"]),
+  vmController.getDashboardData
+);
+
 // Create a new VM - admin only
 router.post(
   "/create",
@@ -30,6 +38,7 @@ router.post(
 // VM request endpoints
 router.post("/request", authenticateToken, vmController.requestVM);
 router.get("/requests", authenticateToken, authorizeRoles(["admin"]), vmController.listVMRequests);
+router.get("/recent-requests", authenticateToken, authorizeRoles(["admin"]), vmController.getRecentVMRequests);
 router.post("/request/:requestId/approve", authenticateToken, authorizeRoles(["admin"]), vmController.approveVMRequest);
 router.post("/request/:requestId/reject", authenticateToken, authorizeRoles(["admin"]), vmController.rejectVMRequest);
 router.get("/my-requests", authenticateToken, vmController.getMyVMRequests);
