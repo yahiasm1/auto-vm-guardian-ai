@@ -13,6 +13,8 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import AdminDashboard from '@/pages/AdminDashboard';
 import StudentDashboard from '@/pages/StudentDashboard';
+import AdminVMRequestsPage from '@/pages/AdminVMRequests';
+import StudentVMRequestsPage from '@/pages/StudentVMRequests';
 import NotFound from '@/pages/NotFound';
 
 // Create a client for React Query
@@ -45,7 +47,7 @@ function App() {
               } />
               <Route path="/admin/requests" element={
                 <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard initialTab="vm-requests" />
+                  <AdminVMRequestsPage />
                 </ProtectedRoute>
               } />
               <Route path="/admin/users" element={
@@ -67,17 +69,17 @@ function App() {
               {/* Protected student routes */}
               <Route path="/student" element={
                 <ProtectedRoute requiredRole="student">
-                  <StudentDashboard initialTab="vms" />
+                  <StudentDashboard />
                 </ProtectedRoute>
               } />
               <Route path="/student/vms" element={
                 <ProtectedRoute requiredRole="student">
-                  <StudentDashboard initialTab="vms" />
+                  <StudentDashboard />
                 </ProtectedRoute>
               } />
               <Route path="/student/requests" element={
                 <ProtectedRoute requiredRole="student">
-                  <StudentDashboard initialTab="requests" />
+                  <StudentVMRequestsPage />
                 </ProtectedRoute>
               } />
               <Route path="/student/settings" element={

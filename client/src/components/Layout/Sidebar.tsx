@@ -4,15 +4,15 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { 
-  LayoutDashboard, 
-  Monitor, 
-  FileText, 
-  Users, 
-  Settings, 
-  ChevronLeft, 
-  ChevronRight, 
-  LogOut 
-} from "lucide-react";
+  FiLayout, 
+  FiMonitor, 
+  FiFileText, 
+  FiUsers, 
+  FiSettings, 
+  FiChevronLeft, 
+  FiChevronRight, 
+  FiLogOut 
+} from "react-icons/fi";
 import { useAuth } from "@/lib/auth";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -70,12 +70,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
     const commonItems = [
       {
         href: `/${userType}`,
-        icon: <LayoutDashboard size={20} />,
+        icon: <FiLayout size={20} />,
         text: "Dashboard",
       },
       {
         href: `/${userType}/vms`,
-        icon: <Monitor size={20} />,
+        icon: <FiMonitor size={20} />,
         text: "Virtual Machines",
       },
     ];
@@ -85,17 +85,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
         ...commonItems,
         {
           href: "/admin/requests",
-          icon: <FileText size={20} />,
+          icon: <FiFileText size={20} />,
           text: "VM Requests",
         },
         {
           href: "/admin/users",
-          icon: <Users size={20} />,
+          icon: <FiUsers size={20} />,
           text: "User Management",
         },
         {
           href: "/admin/settings",
-          icon: <Settings size={20} />,
+          icon: <FiSettings size={20} />,
           text: "System Settings",
         },
       ];
@@ -104,12 +104,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
         ...commonItems,
         {
           href: `/${userType}/requests`,
-          icon: <FileText size={20} />,
+          icon: <FiFileText size={20} />,
           text: "My VM Requests",
         },
         {
           href: `/${userType}/settings`,
-          icon: <Settings size={20} />,
+          icon: <FiSettings size={20} />,
           text: "Settings",
         },
       ];
@@ -135,7 +135,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
           className="ml-auto"
           onClick={() => setCollapsed(!collapsed)}
         >
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          {collapsed ? <FiChevronRight size={18} /> : <FiChevronLeft size={18} />}
         </Button>
       </div>
       
@@ -164,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
               )}
               onClick={signOut}
             >
-              <LogOut size={20} />
+              <FiLogOut size={20} />
               {!collapsed && <span>Logout</span>}
             </Button>
           </TooltipTrigger>
