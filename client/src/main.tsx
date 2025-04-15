@@ -1,20 +1,14 @@
 
 import React from "react";
-import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
+import ReactDOM from "react-dom/client";
+import App from "./App";
 import "./index.css";
-import { AuthProvider } from "./lib/auth";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
-const rootElement = document.getElementById("root");
-
-if (!rootElement) {
-  throw new Error("Root element not found");
-}
-
-createRoot(rootElement).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <AuthProvider>
+    <TooltipProvider>
       <App />
-    </AuthProvider>
-  </React.StrictMode>
+    </TooltipProvider>
+  </React.StrictMode>,
 );
