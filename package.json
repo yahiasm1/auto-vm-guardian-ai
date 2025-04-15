@@ -17,6 +17,7 @@
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-dialog": "^1.0.5",
+    "@radix-ui/react-dropdown-menu": "^2.1.7",
     "@vitejs/plugin-react-swc": "^3.8.1",
     "concurrently": "^8.2.2",
     "date-fns": "^4.1.0",
