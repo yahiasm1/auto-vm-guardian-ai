@@ -109,11 +109,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // Don't treat 304 as an error
+    // Handle 304 responses as successful responses
     if (error.response && error.response.status === 304) {
-      // For 304 responses, we create a synthetic response object to avoid error handling
+      console.log('Using cached data for request:', error.config.url);
+      
+      // Return a success response with empty data
+      // The browser will use cached data automatically
       return Promise.resolve({ 
-        data: {}, 
+        data: error.response.data || {}, 
         status: 304, 
         statusText: 'Not Modified',
         headers: error.response.headers,

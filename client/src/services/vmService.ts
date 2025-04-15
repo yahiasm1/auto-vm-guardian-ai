@@ -103,14 +103,9 @@ export const vmService = {
         status: this.mapStateToStatus(vm.state)
       }));
     } catch (error) {
-      // If it's a 304, return the cached data
-      if (error.response && error.response.status === 304) {
-        // The browser will use cached data, so we can return empty array
-        // The cached data will be used automatically by the browser
-        console.log('Using cached VMs data');
-        return [];
-      }
-      throw error;
+      console.error('Error listing VMs:', error);
+      // Return empty array to avoid UI errors
+      return [];
     }
   },
   
@@ -121,36 +116,36 @@ export const vmService = {
     try {
       const response = await api.get(`/vms/dashboard-data`);
       
-      // Map the raw VM state to status for recent VMs
-      if (response.data.recentVms && Array.isArray(response.data.recentVms)) {
-        response.data.recentVms = response.data.recentVms.map((vm: VM) => ({
+      // Handle successful response (200 or cached 304)
+      const data = response.data;
+      
+      // Map the raw VM state to status for recent VMs if they exist
+      if (data.recentVms && Array.isArray(data.recentVms)) {
+        data.recentVms = data.recentVms.map((vm: VM) => ({
           ...vm,
           status: this.mapStateToStatus(vm.state)
         }));
       }
       
-      return response.data;
+      return data;
     } catch (error) {
-      // If it's a 304, return default data structure since browser will use cached data
-      if (error.response && error.response.status === 304) {
-        console.log('Using cached dashboard data');
-        // Return a minimal valid structure that won't cause errors while UI uses cached data
-        return {
-          stats: {
-            totalVms: 0,
-            runningVms: 0, 
-            storageUsed: 0,
-            activeUsers: 0
-          },
-          recentVms: [],
-          resourceStats: {
-            cpu: { used: 0, total: 100 },
-            ram: { used: 0, total: 64 },
-            storage: { used: 0, total: 2 }
-          }
-        };
-      }
-      throw error;
+      console.error('Error fetching dashboard data:', error);
+      
+      // Return a default structure that won't cause UI errors
+      return {
+        stats: {
+          totalVms: 0,
+          runningVms: 0, 
+          storageUsed: 0,
+          activeUsers: 0
+        },
+        recentVms: [],
+        resourceStats: {
+          cpu: { used: 0, total: 100 },
+          ram: { used: 0, total: 64 },
+          storage: { used: 0, total: 2 }
+        }
+      };
     }
   },
   
@@ -160,14 +155,10 @@ export const vmService = {
   async getRecentVMRequests(): Promise<VMRequest[]> {
     try {
       const response = await api.get(`/vms/recent-requests`);
-      return response.data.requests;
+      return response.data.requests || [];
     } catch (error) {
-      // If it's a 304, return empty array since browser will use cached data
-      if (error.response && error.response.status === 304) {
-        console.log('Using cached requests data');
-        return [];
-      }
-      throw error;
+      console.error('Error fetching recent VM requests:', error);
+      return [];
     }
   },
   
