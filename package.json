@@ -15,6 +15,7 @@
     "build:dev": "cd client && npm run build:dev"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.0.5",
     "@vitejs/plugin-react-swc": "^3.8.1",
     "concurrently": "^8.2.2",
     "lovable-tagger": "^1.1.8",

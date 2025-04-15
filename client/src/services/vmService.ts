@@ -43,6 +43,36 @@ export interface CreateVMPayload {
   description?: string;
 }
 
+export interface VMRequestPayload {
+  purpose: string;
+  memory?: number;
+  vcpus?: number;
+  storage?: number;
+  os_type?: string;
+  course?: string;
+  duration?: string; // e.g., "2 weeks", "1 semester"
+  description?: string;
+}
+
+export interface VMRequest {
+  id: string;
+  user_id: string;
+  username?: string;
+  purpose: string;
+  memory?: number;
+  vcpus?: number;
+  storage?: number;
+  os_type?: string;
+  course?: string;
+  duration?: string;
+  description?: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  updated_at?: string;
+  vm_id?: string;
+  response_message?: string;
+}
+
 export const vmService = {
   /**
    * Get a list of all VMs
@@ -143,6 +173,46 @@ export const vmService = {
    */
   async updateVM(vmName: string, vmData: Partial<VM>): Promise<VMOperationResult> {
     const response = await api.put(`/vm/${vmName}`, vmData);
+    return response.data;
+  },
+  
+  /**
+   * Create a VM request
+   */
+  async requestVM(request: VMRequestPayload): Promise<{ success: boolean; message: string; requestId?: string }> {
+    const response = await api.post('/vm/request', request);
+    return response.data;
+  },
+
+  /**
+   * Get all VM requests (admin only)
+   */
+  async getAllVMRequests(): Promise<VMRequest[]> {
+    const response = await api.get('/vm/requests');
+    return response.data.requests;
+  },
+
+  /**
+   * Get my VM requests (for students/instructors)
+   */
+  async getMyVMRequests(): Promise<VMRequest[]> {
+    const response = await api.get('/vm/my-requests');
+    return response.data.requests;
+  },
+
+  /**
+   * Approve a VM request (admin only)
+   */
+  async approveVMRequest(requestId: string, vmConfig?: CreateVMPayload): Promise<{ success: boolean; message: string }> {
+    const response = await api.post(`/vm/request/${requestId}/approve`, vmConfig || {});
+    return response.data;
+  },
+
+  /**
+   * Reject a VM request (admin only)
+   */
+  async rejectVMRequest(requestId: string, reason: string): Promise<{ success: boolean; message: string }> {
+    const response = await api.post(`/vm/request/${requestId}/reject`, { reason });
     return response.data;
   },
   

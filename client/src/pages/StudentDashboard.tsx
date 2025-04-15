@@ -1,4 +1,5 @@
-import React from "react";
+
+import React, { useState } from "react";
 import { DashboardLayout } from "@/components/Layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,11 +9,19 @@ import {
   FiCpu,
   FiHardDrive,
   FiRotateCw,
+  FiPlus,
 } from "react-icons/fi";
 import { FaMemory } from "react-icons/fa";
 import { Progress } from "@/components/ui/progress";
+import { RequestVMForm } from "@/components/VM/RequestVMForm";
+import { MyVMRequests } from "@/components/VM/MyVMRequests";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const StudentDashboard = () => {
+  const [requestFormOpen, setRequestFormOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("vms");
+  
   // Mock data for virtual machines assigned to student
   const myVms = [
     {
@@ -52,10 +61,30 @@ const StudentDashboard = () => {
     // API call to restart VM would go here
   };
 
+  const handleRequestSubmitted = () => {
+    setRequestFormOpen(false);
+    setActiveTab("requests");
+  };
+
   return (
     <DashboardLayout title="Student Dashboard" userType="student">
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">My Virtual Machines</h2>
+      <div className="flex justify-between items-center mb-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList>
+            <TabsTrigger value="vms">My VMs</TabsTrigger>
+            <TabsTrigger value="requests">VM Requests</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        
+        <Button 
+          onClick={() => setRequestFormOpen(true)}
+          className="flex items-center gap-2 ml-4"
+        >
+          <FiPlus size={16} /> Request VM
+        </Button>
+      </div>
+      
+      <TabsContent value="vms" className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {myVms.map((vm) => (
             <Card key={vm.id} className="overflow-hidden border">
@@ -146,7 +175,20 @@ const StudentDashboard = () => {
             </Card>
           ))}
         </div>
-      </div>
+      </TabsContent>
+      
+      <TabsContent value="requests" className="space-y-6">
+        <MyVMRequests onRefreshRequested={() => {}} />
+      </TabsContent>
+      
+      <Dialog open={requestFormOpen} onOpenChange={setRequestFormOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Request a Virtual Machine</DialogTitle>
+          </DialogHeader>
+          <RequestVMForm onRequestSubmitted={handleRequestSubmitted} />
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };

@@ -20,6 +20,13 @@ router.post(
   vmController.createVM
 );
 
+// VM request endpoints
+router.post("/request", authenticateToken, vmController.requestVM);
+router.get("/requests", authenticateToken, authorizeRoles(["admin"]), vmController.listVMRequests);
+router.post("/request/:requestId/approve", authenticateToken, authorizeRoles(["admin"]), vmController.approveVMRequest);
+router.post("/request/:requestId/reject", authenticateToken, authorizeRoles(["admin"]), vmController.rejectVMRequest);
+router.get("/my-requests", authenticateToken, vmController.getMyVMRequests);
+
 // Get VM info
 router.get("/:vmName", authenticateToken, vmController.getVMInfo);
 
