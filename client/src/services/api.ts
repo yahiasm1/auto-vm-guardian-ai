@@ -17,14 +17,19 @@ const api = axios.create({
 export const authService = {
   // Login user
   async login(email: string, password: string) {
-    const response = await api.post('/auth/login', { email, password });
-    
-    // Store the token in local storage
-    if (response.data.token) {
-      localStorage.setItem('accessToken', response.data.token);
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      
+      // Store the token in local storage
+      if (response.data.token) {
+        localStorage.setItem('accessToken', response.data.token);
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-    
-    return response.data;
   },
   
   // Register user
