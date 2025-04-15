@@ -147,7 +147,7 @@ export const vmService = {
    * Create a new VM
    */
   async createVM(vmData: CreateVMPayload): Promise<VMOperationResult> {
-    const response = await api.post(`/vm/create`, vmData);
+    const response = await api.post(`/vms/create`, vmData);
     return response.data;
   },
   
@@ -155,7 +155,7 @@ export const vmService = {
    * Get detailed info for a VM
    */
   async getVMInfo(vmName: string): Promise<VMInfo> {
-    const response = await api.get(`/vm/${vmName}`);
+    const response = await api.get(`/vms/${vmName}`);
     const vmInfo = response.data.vm;
     
     return {
@@ -168,7 +168,7 @@ export const vmService = {
    * Start a VM
    */
   async startVM(vmName: string): Promise<VMOperationResult> {
-    const response = await api.post(`/vm/start/${vmName}`);
+    const response = await api.post(`/vms/start/${vmName}`);
     return response.data;
   },
   
@@ -176,7 +176,7 @@ export const vmService = {
    * Stop a VM forcefully
    */
   async stopVM(vmName: string): Promise<VMOperationResult> {
-    const response = await api.post(`/vm/stop/${vmName}`);
+    const response = await api.post(`/vms/stop/${vmName}`);
     return response.data;
   },
   
@@ -184,7 +184,7 @@ export const vmService = {
    * Shutdown a VM gracefully
    */
   async shutdownVM(vmName: string): Promise<VMOperationResult> {
-    const response = await api.post(`/vm/shutdown/${vmName}`);
+    const response = await api.post(`/vms/shutdown/${vmName}`);
     return response.data;
   },
   
@@ -192,7 +192,7 @@ export const vmService = {
    * Restart a VM
    */
   async restartVM(vmName: string): Promise<VMOperationResult> {
-    const response = await api.post(`/vm/restart/${vmName}`);
+    const response = await api.post(`/vms/restart/${vmName}`);
     return response.data;
   },
   
@@ -200,7 +200,7 @@ export const vmService = {
    * Delete a VM
    */
   async deleteVM(vmName: string, removeStorage = false): Promise<VMOperationResult> {
-    const response = await api.delete(`/vm/${vmName}`, {
+    const response = await api.delete(`/vms/${vmName}`, {
       params: { removeStorage }
     });
     return response.data;
@@ -210,7 +210,7 @@ export const vmService = {
    * Suspend a VM
    */
   async suspendVM(vmName: string): Promise<VMOperationResult> {
-    const response = await api.post(`/vm/suspend/${vmName}`);
+    const response = await api.post(`/vms/suspend/${vmName}`);
     return response.data;
   },
   
@@ -218,7 +218,7 @@ export const vmService = {
    * Resume a VM
    */
   async resumeVM(vmName: string): Promise<VMOperationResult> {
-    const response = await api.post(`/vm/resume/${vmName}`);
+    const response = await api.post(`/vms/resume/${vmName}`);
     return response.data;
   },
   
@@ -226,7 +226,7 @@ export const vmService = {
    * Update VM details
    */
   async updateVM(vmName: string, vmData: Partial<VM>): Promise<VMOperationResult> {
-    const response = await api.put(`/vm/${vmName}`, vmData);
+    const response = await api.put(`/vms/${vmName}`, vmData);
     return response.data;
   },
   
@@ -258,7 +258,7 @@ export const vmService = {
    * Approve a VM request (admin only)
    */
   async approveVMRequest(requestId: string, vmConfig?: CreateVMPayload): Promise<{ success: boolean; message: string }> {
-    const response = await api.post(`/vm/request/${requestId}/approve`, vmConfig || {});
+    const response = await api.post(`/vms/request/${requestId}/approve`, vmConfig || {});
     return response.data;
   },
 
@@ -266,7 +266,7 @@ export const vmService = {
    * Reject a VM request (admin only)
    */
   async rejectVMRequest(requestId: string, reason: string): Promise<{ success: boolean; message: string }> {
-    const response = await api.post(`/vm/request/${requestId}/reject`, { reason });
+    const response = await api.post(`/vms/request/${requestId}/reject`, { reason });
     return response.data;
   },
   
