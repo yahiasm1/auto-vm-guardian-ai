@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 5000;
 // Middlewares
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
     credentials: true,
   })
 );
@@ -24,6 +24,7 @@ app.use(morgan("dev"));
 // Routes
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/vm", require("./routes/vm"));
+app.use("/api/users", require("./routes/users"));
 
 // Basic route for checking server status
 app.get("/api/health", (req, res) => {
