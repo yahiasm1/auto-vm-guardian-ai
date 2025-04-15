@@ -109,6 +109,18 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // Don't treat 304 as an error
+    if (error.response && error.response.status === 304) {
+      // For 304 responses, we create a synthetic response object to avoid error handling
+      return Promise.resolve({ 
+        data: {}, 
+        status: 304, 
+        statusText: 'Not Modified',
+        headers: error.response.headers,
+        config: error.config
+      });
+    }
+    
     const originalRequest = error.config;
     
     // If error is 401 Unauthorized and not a refresh token request

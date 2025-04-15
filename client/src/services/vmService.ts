@@ -92,55 +92,107 @@ export const vmService = {
    * Get a list of all VMs
    */
   async listVMs(onlyRunning = false): Promise<VM[]> {
-    const response = await api.get(`/vms/list`, {
-      params: { onlyRunning }
-    });
-    
-    // Map the raw VM data to our standardized format for the frontend
-    return response.data.vms.map((vm: VM) => ({
-      ...vm,
-      status: this.mapStateToStatus(vm.state)
-    }));
+    try {
+      const response = await api.get(`/vms/list`, {
+        params: { onlyRunning }
+      });
+      
+      // Map the raw VM data to our standardized format for the frontend
+      return response.data.vms.map((vm: VM) => ({
+        ...vm,
+        status: this.mapStateToStatus(vm.state)
+      }));
+    } catch (error) {
+      // If it's a 304, return the cached data
+      if (error.response && error.response.status === 304) {
+        // The browser will use cached data, so we can return empty array
+        // The cached data will be used automatically by the browser
+        console.log('Using cached VMs data');
+        return [];
+      }
+      throw error;
+    }
   },
   
   /**
    * Get admin dashboard data
    */
   async getDashboardData(): Promise<DashboardData> {
-    const response = await api.get(`/vms/dashboard-data`);
-    
-    // Map the raw VM state to status for recent VMs
-    if (response.data.recentVms && Array.isArray(response.data.recentVms)) {
-      response.data.recentVms = response.data.recentVms.map((vm: VM) => ({
-        ...vm,
-        status: this.mapStateToStatus(vm.state)
-      }));
+    try {
+      const response = await api.get(`/vms/dashboard-data`);
+      
+      // Map the raw VM state to status for recent VMs
+      if (response.data.recentVms && Array.isArray(response.data.recentVms)) {
+        response.data.recentVms = response.data.recentVms.map((vm: VM) => ({
+          ...vm,
+          status: this.mapStateToStatus(vm.state)
+        }));
+      }
+      
+      return response.data;
+    } catch (error) {
+      // If it's a 304, return default data structure since browser will use cached data
+      if (error.response && error.response.status === 304) {
+        console.log('Using cached dashboard data');
+        // Return a minimal valid structure that won't cause errors while UI uses cached data
+        return {
+          stats: {
+            totalVms: 0,
+            runningVms: 0, 
+            storageUsed: 0,
+            activeUsers: 0
+          },
+          recentVms: [],
+          resourceStats: {
+            cpu: { used: 0, total: 100 },
+            ram: { used: 0, total: 64 },
+            storage: { used: 0, total: 2 }
+          }
+        };
+      }
+      throw error;
     }
-    
-    return response.data;
   },
   
   /**
    * Get recent VM requests for admin dashboard
    */
   async getRecentVMRequests(): Promise<VMRequest[]> {
-    const response = await api.get(`/vms/recent-requests`);
-    return response.data.requests;
+    try {
+      const response = await api.get(`/vms/recent-requests`);
+      return response.data.requests;
+    } catch (error) {
+      // If it's a 304, return empty array since browser will use cached data
+      if (error.response && error.response.status === 304) {
+        console.log('Using cached requests data');
+        return [];
+      }
+      throw error;
+    }
   },
   
   /**
    * Get a list of VMs owned by the current user
    */
   async listMyVMs(onlyRunning = false): Promise<VM[]> {
-    const response = await api.get(`/vms/my-vms`, {
-      params: { onlyRunning }
-    });
-    
-    // Map the raw VM data to our standardized format for the frontend
-    return response.data.vms.map((vm: VM) => ({
-      ...vm,
-      status: this.mapStateToStatus(vm.state)
-    }));
+    try {
+      const response = await api.get(`/vms/my-vms`, {
+        params: { onlyRunning }
+      });
+      
+      // Map the raw VM data to our standardized format for the frontend
+      return response.data.vms.map((vm: VM) => ({
+        ...vm,
+        status: this.mapStateToStatus(vm.state)
+      }));
+    } catch (error) {
+      // If it's a 304, return empty array since browser will use cached data
+      if (error.response && error.response.status === 304) {
+        console.log('Using cached my VMs data');
+        return [];
+      }
+      throw error;
+    }
   },
   
   /**
@@ -250,8 +302,17 @@ export const vmService = {
    * Get my VM requests (for students/instructors)
    */
   async getMyVMRequests(): Promise<VMRequest[]> {
-    const response = await api.get('/vms/my-requests');
-    return response.data.requests;
+    try {
+      const response = await api.get('/vms/my-requests');
+      return response.data.requests;
+    } catch (error) {
+      // If it's a 304, return empty array since browser will use cached data
+      if (error.response && error.response.status === 304) {
+        console.log('Using cached my requests data');
+        return [];
+      }
+      throw error;
+    }
   },
 
   /**
