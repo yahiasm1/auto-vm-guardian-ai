@@ -1,174 +1,126 @@
+
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { FiUsers, FiServer, FiClipboard, FiHome, FiMenu, FiX, FiSettings } from "react-icons/fi";
 import { cn } from "@/lib/utils";
-import { 
-  FiLayout, 
-  FiMonitor, 
-  FiFileText, 
-  FiUsers, 
-  FiSettings, 
-  FiChevronLeft, 
-  FiChevronRight, 
-  FiLogOut 
-} from "react-icons/fi";
-import { useAuth } from "@/lib/auth";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-
-interface SidebarLinkProps {
-  href: string;
-  icon: React.ReactNode;
-  text: string;
-  isActive: boolean;
-  isCollapsed: boolean;
-}
-
-const SidebarLink: React.FC<SidebarLinkProps> = ({ 
-  href, 
-  icon, 
-  text, 
-  isActive,
-  isCollapsed
-}) => {
-  return (
-    <Tooltip delayDuration={0}>
-      <TooltipTrigger asChild>
-        <Link to={href}>
-          <Button
-            variant="ghost"
-            size="lg"
-            className={cn(
-              "w-full justify-start gap-3 px-3",
-              isCollapsed ? "justify-center p-2" : "px-4",
-              isActive ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
-            )}
-          >
-            {icon}
-            {!isCollapsed && <span>{text}</span>}
-          </Button>
-        </Link>
-      </TooltipTrigger>
-      {isCollapsed && <TooltipContent side="right">{text}</TooltipContent>}
-    </Tooltip>
-  );
-};
+import { useMobile } from "@/hooks/use-mobile";
 
 interface SidebarProps {
-  userType: "admin" | "student" | "instructor";
+  userType?: "admin" | "student" | "instructor";
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
-  const [collapsed, setCollapsed] = useState(false);
-  const location = useLocation();
-  const { signOut } = useAuth();
-  
-  const isLinkActive = (path: string) => location.pathname.startsWith(path);
+interface NavItem {
+  label: string;
+  href: string;
+  icon: React.ReactNode;
+  roles: Array<"admin" | "student" | "instructor">;
+}
 
-  const getNavigationItems = () => {
-    const commonItems = [
-      {
-        href: `/${userType}`,
-        icon: <FiLayout size={20} />,
-        text: "Dashboard",
-      },
-      {
-        href: `/${userType}/vms`,
-        icon: <FiMonitor size={20} />,
-        text: "Virtual Machines",
-      },
-    ];
-    
-    if (userType === "admin") {
-      return [
-        ...commonItems,
-        {
-          href: "/admin/vm-requests",
-          icon: <FiFileText size={20} />,
-          text: "VM Requests",
-        },
-        {
-          href: "/admin/users",
-          icon: <FiUsers size={20} />,
-          text: "User Management",
-        },
-        {
-          href: "/admin/settings",
-          icon: <FiSettings size={20} />,
-          text: "System Settings",
-        },
-      ];
-    } else {
-      return [
-        ...commonItems,
-        {
-          href: `/${userType}/vm-requests`,
-          icon: <FiFileText size={20} />,
-          text: "My VM Requests",
-        },
-        {
-          href: `/${userType}/settings`,
-          icon: <FiSettings size={20} />,
-          text: "Settings",
-        },
-      ];
-    }
+export const Sidebar: React.FC<SidebarProps> = ({ userType = "admin" }) => {
+  const location = useLocation();
+  const isMobile = useMobile();
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  
+  const toggleMobileMenu = () => {
+    setShowMobileMenu(!showMobileMenu);
   };
   
-  const navigationItems = getNavigationItems();
-
-  return (
-    <div className={cn(
-      "flex flex-col h-full bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 transition-all duration-300",
-      collapsed ? "w-16" : "w-64"
-    )}>
-      <div className="p-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-700">
-        {!collapsed && (
-          <h2 className="text-lg font-semibold text-vmSystem-blue dark:text-vmSystem-blue-light">
-            VM Guardian
-          </h2>
-        )}
-        <Button 
-          variant="ghost" 
-          size="sm"
-          className="ml-auto"
-          onClick={() => setCollapsed(!collapsed)}
-        >
-          {collapsed ? <FiChevronRight size={18} /> : <FiChevronLeft size={18} />}
-        </Button>
+  const navItems: NavItem[] = [
+    {
+      label: "Dashboard",
+      href: userType === "admin" ? "/admin" : `/student`,
+      icon: <FiHome size={20} />,
+      roles: ["admin", "student", "instructor"],
+    },
+    {
+      label: "Virtual Machines",
+      href: userType === "admin" ? "/admin/vms" : "/student/vms",
+      icon: <FiServer size={20} />,
+      roles: ["admin", "student", "instructor"],
+    },
+    {
+      label: "VM Requests",
+      href: userType === "admin" ? "/admin/vm-requests" : "/student/vm-requests",
+      icon: <FiClipboard size={20} />,
+      roles: ["admin", "student", "instructor"],
+    },
+    {
+      label: "Users",
+      href: "/admin/users",
+      icon: <FiUsers size={20} />,
+      roles: ["admin"],
+    },
+    {
+      label: "Settings",
+      href: "/settings",
+      icon: <FiSettings size={20} />,
+      roles: ["admin", "student", "instructor"],
+    },
+  ];
+  
+  // Filter nav items based on user role
+  const filteredNavItems = navItems.filter(
+    (item) => item.roles.includes(userType)
+  );
+  
+  const sidebarContent = (
+    <div className="space-y-4 py-4">
+      <div className="px-4 py-2">
+        <h2 className="text-xl font-bold tracking-tight text-vmSystem-blue dark:text-vmSystem-blue-light">
+          VM Manager
+        </h2>
       </div>
-      
-      <div className="flex-1 py-6 flex flex-col gap-2">
-        {navigationItems.map((item) => (
-          <SidebarLink
+      <nav className="space-y-1 px-2">
+        {filteredNavItems.map((item) => (
+          <Link
             key={item.href}
-            href={item.href}
-            icon={item.icon}
-            text={item.text}
-            isActive={isLinkActive(item.href)}
-            isCollapsed={collapsed}
-          />
+            to={item.href}
+            className={cn(
+              "flex items-center rounded-md px-3 py-3 text-sm font-medium transition-all",
+              location.pathname === item.href
+                ? "bg-slate-100 dark:bg-slate-700 text-vmSystem-blue dark:text-vmSystem-blue-light"
+                : "text-slate-500 hover:text-vmSystem-blue hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-vmSystem-blue-light"
+            )}
+          >
+            <span className="mr-3">{item.icon}</span>
+            {item.label}
+          </Link>
         ))}
-      </div>
-      
-      <div className="mt-auto border-t border-slate-200 dark:border-slate-700 p-4">
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="lg"
-              className={cn(
-                "w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/10 gap-3",
-                collapsed ? "justify-center p-2" : "px-4"
-              )}
-              onClick={signOut}
-            >
-              <FiLogOut size={20} />
-              {!collapsed && <span>Logout</span>}
-            </Button>
-          </TooltipTrigger>
-          {collapsed && <TooltipContent side="right">Logout</TooltipContent>}
-        </Tooltip>
-      </div>
+      </nav>
+    </div>
+  );
+
+  // Mobile version with hamburger menu
+  if (isMobile) {
+    return (
+      <>
+        <button
+          onClick={toggleMobileMenu}
+          className="fixed top-4 left-4 z-40 p-2 rounded-md bg-white dark:bg-slate-800 shadow-md"
+        >
+          {showMobileMenu ? <FiX size={24} /> : <FiMenu size={24} />}
+        </button>
+        
+        {showMobileMenu && (
+          <div className="fixed inset-0 z-30 bg-black bg-opacity-50" onClick={toggleMobileMenu} />
+        )}
+        
+        <div
+          className={cn(
+            "fixed top-0 left-0 z-30 h-full w-64 shadow-lg bg-white dark:bg-slate-800 transition-transform transform",
+            showMobileMenu ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          {sidebarContent}
+        </div>
+      </>
+    );
+  }
+
+  // Desktop version
+  return (
+    <div className="hidden md:flex flex-col h-full w-64 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+      {sidebarContent}
     </div>
   );
 };

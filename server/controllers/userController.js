@@ -74,6 +74,53 @@ class UserController {
       });
     }
   }
+  
+  /**
+   * Update user info
+   */
+  async updateUser(req, res) {
+    try {
+      const { id } = req.params;
+      const { name, department } = req.body;
+      
+      // Ensure user can only update their own info unless they're an admin
+      if (req.user.role !== 'admin' && req.user.id !== id) {
+        return res.status(403).json({
+          success: false,
+          message: 'You are not authorized to update this user'
+        });
+      }
+      
+      // Update user info
+      const result = await db.query(
+        `UPDATE users SET 
+         name = COALESCE($1, name), 
+         department = COALESCE($2, department)
+         WHERE id = $3
+         RETURNING id, email, name, role, department, status`,
+        [name, department, id]
+      );
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+      
+      return res.json({
+        success: true,
+        message: 'User updated successfully',
+        user: result.rows[0]
+      });
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to update user'
+      });
+    }
+  }
 }
 
 module.exports = new UserController();

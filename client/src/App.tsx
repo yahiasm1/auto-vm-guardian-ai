@@ -10,6 +10,7 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import NotFound from "@/pages/NotFound";
 import IndexPage from "@/pages/Index";
+import Settings from "@/pages/Settings";
 
 // Admin Pages
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -98,6 +99,16 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={["student"]}>
                   <StudentVMRequests />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Settings Routes (accessible to all users) */}
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute allowedRoles={["admin", "student", "instructor"]}>
+                  <Settings />
                 </ProtectedRoute>
               }
             />
