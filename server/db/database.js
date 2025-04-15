@@ -1,150 +1,154 @@
-
 const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
 
-// Create database connection pool
+// Create database connection pool with more flexible configuration
 const pool = new Pool({
   host: process.env.DB_HOST || "localhost",
   port: process.env.DB_PORT || 5432,
   database: process.env.DB_NAME || "vm_management",
   user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD || "postgres",
+  password: process.env.DB_PASSWORD || "1234", // Changed default password
+  // Add connection timeout to avoid hanging
+  connectionTimeoutMillis: 5000,
 });
 
 // Initialize database tables
 async function initDatabase() {
+  let client;
+  
   try {
-    // Connect to the database
-    const client = await pool.connect();
+    // Test the connection first
+    client = await pool.connect();
+    console.log("Successfully connected to PostgreSQL database");
+    
+    // Create users table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        name TEXT NOT NULL,
+        role TEXT NOT NULL,
+        department TEXT,
+        status TEXT DEFAULT 'pending',
+        last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-    try {
-      // Create users table
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS users (
-          id UUID PRIMARY KEY,
-          email TEXT UNIQUE NOT NULL,
-          password TEXT NOT NULL,
-          name TEXT NOT NULL,
-          role TEXT NOT NULL,
-          department TEXT,
-          status TEXT DEFAULT 'pending',
-          last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+    // Create sessions table for JWT refresh tokens
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id SERIAL PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        refresh_token TEXT NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-      // Create sessions table for JWT refresh tokens
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS sessions (
-          id SERIAL PRIMARY KEY,
-          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-          refresh_token TEXT NOT NULL,
-          expires_at TIMESTAMP NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+    // Create VMs table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vms (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL UNIQUE,
+        state TEXT NOT NULL DEFAULT 'stopped',
+        uuid TEXT UNIQUE,
+        os_type TEXT,
+        memory INTEGER,
+        vcpus INTEGER,
+        storage TEXT,
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        description TEXT,
+        ip_address TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-      // Create VMs table
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS vms (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          name TEXT NOT NULL UNIQUE,
-          state TEXT NOT NULL DEFAULT 'stopped',
-          uuid TEXT UNIQUE,
-          os_type TEXT,
-          memory INTEGER,
-          vcpus INTEGER,
-          storage TEXT,
-          user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-          description TEXT,
-          ip_address TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+    // Create VM Requests table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vm_requests (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        username TEXT,
+        purpose TEXT NOT NULL,
+        memory INTEGER,
+        vcpus INTEGER,
+        storage INTEGER,
+        os_type TEXT,
+        course TEXT,
+        duration TEXT,
+        description TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        response_message TEXT,
+        vm_id UUID REFERENCES vms(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-      // Create VM Requests table
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS vm_requests (
-          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-          username TEXT,
-          purpose TEXT NOT NULL,
-          memory INTEGER,
-          vcpus INTEGER,
-          storage INTEGER,
-          os_type TEXT,
-          course TEXT,
-          duration TEXT,
-          description TEXT,
-          status TEXT NOT NULL DEFAULT 'pending',
-          response_message TEXT,
-          vm_id UUID REFERENCES vms(id) ON DELETE SET NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
+    // Check if admin user exists, if not create default one
+    const adminResult = await client.query(
+      "SELECT * FROM users WHERE email = 'admin@example.com'"
+    );
 
-      // Check if admin user exists, if not create default one
-      const adminResult = await client.query(
-        "SELECT * FROM users WHERE email = 'admin@example.com'"
+    if (adminResult.rows.length === 0) {
+      const salt = bcrypt.genSaltSync(10);
+      const hashedPassword = bcrypt.hashSync("admin123", salt);
+      const adminId = uuidv4();
+
+      await client.query(
+        "INSERT INTO users (id, email, password, name, role, department, status) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        [
+          adminId,
+          "admin@example.com",
+          hashedPassword,
+          "Admin User",
+          "admin",
+          "IT",
+          "active",
+        ]
       );
 
-      if (adminResult.rows.length === 0) {
-        const salt = bcrypt.genSaltSync(10);
-        const hashedPassword = bcrypt.hashSync("admin123", salt);
-        const adminId = uuidv4();
+      console.log("Default admin user created successfully");
+    }
 
-        await client.query(
-          "INSERT INTO users (id, email, password, name, role, department, status) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-          [
-            adminId,
-            "admin@example.com",
-            hashedPassword,
-            "Admin User",
-            "admin",
-            "IT",
-            "active",
-          ]
-        );
+    // Check if student user exists, if not create default one
+    const studentResult = await client.query(
+      "SELECT * FROM users WHERE email = 'student@example.com'"
+    );
 
-        console.log("Default admin user created successfully");
-      }
+    if (studentResult.rows.length === 0) {
+      const salt = bcrypt.genSaltSync(10);
+      const hashedPassword = bcrypt.hashSync("student123", salt);
+      const studentId = uuidv4();
 
-      // Check if student user exists, if not create default one
-      const studentResult = await client.query(
-        "SELECT * FROM users WHERE email = 'student@example.com'"
+      await client.query(
+        "INSERT INTO users (id, email, password, name, role, department, status) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        [
+          studentId,
+          "student@example.com",
+          hashedPassword,
+          "Student User",
+          "student",
+          "Computer Science",
+          "active",
+        ]
       );
 
-      if (studentResult.rows.length === 0) {
-        const salt = bcrypt.genSaltSync(10);
-        const hashedPassword = bcrypt.hashSync("student123", salt);
-        const studentId = uuidv4();
-
-        await client.query(
-          "INSERT INTO users (id, email, password, name, role, department, status) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-          [
-            studentId,
-            "student@example.com",
-            hashedPassword,
-            "Student User",
-            "student",
-            "Computer Science",
-            "active",
-          ]
-        );
-
-        console.log("Default student user created successfully");
-      }
-    } finally {
-      client.release();
+      console.log("Default student user created successfully");
     }
 
     console.log("Database initialized successfully");
   } catch (error) {
     console.error("Error initializing database:", error);
     throw error;
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 }
 
