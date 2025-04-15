@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/Layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MyVMRequests } from "@/components/VM/MyVMRequests";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,6 +10,7 @@ import { RequestVMForm } from "@/components/VM/RequestVMForm";
 import { useNavigate } from "react-router-dom";
 import { vmService, VM } from "@/services/vmService";
 import { toast } from "sonner";
+import { StudentDashboardStats } from "@/components/Student/StudentDashboardStats";
 import {
   FiMonitor,
   FiPower,
@@ -19,6 +20,8 @@ import {
   FiPlus,
   FiAlertCircle,
   FiLoader,
+  FiArrowRight,
+  FiEye
 } from "react-icons/fi";
 import { FaMemory } from "react-icons/fa";
 import { Progress } from "@/components/ui/progress";
@@ -37,6 +40,27 @@ const StudentDashboard: React.FC = () => {
     queryKey: ["myVMs"],
     queryFn: () => vmService.listMyVMs(),
   });
+
+  // Fetch VM requests
+  const {
+    data: vmRequests = [],
+    isLoading: requestsLoading,
+    error: requestsError
+  } = useQuery({
+    queryKey: ["vmRequests", "my"],
+    queryFn: () => vmService.getMyVMRequests(),
+  });
+
+  // Calculate statistics
+  const totalVms = myVms.length;
+  const runningVms = myVms.filter(vm => vm.status === "running").length;
+  const pendingRequests = vmRequests.filter(req => req.status === "pending").length;
+
+  // Get only the most recent VMs (limit to 2)
+  const recentVms = myVms.slice(0, 2);
+  
+  // Get only the most recent requests (limit to 3)
+  const recentRequests = vmRequests.slice(0, 3);
 
   const handleStartVm = async (vmName: string) => {
     try {
@@ -82,24 +106,65 @@ const StudentDashboard: React.FC = () => {
   return (
     <DashboardLayout title="Student Dashboard" userType="student">
       <div className="flex flex-col space-y-8">
-        {/* VM Section */}
-        <div>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold">My Virtual Machines</h2>
-            
+        {/* Statistics Overview */}
+        <section>
+          <h2 className="text-xl font-semibold mb-4">Overview</h2>
+          <StudentDashboardStats 
+            totalVms={totalVms}
+            runningVms={runningVms}
+            pendingRequests={pendingRequests}
+          />
+        </section>
+        
+        {/* Quick Actions */}
+        <section>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Quick Actions</h2>
+          </div>
+          <div className="flex flex-wrap gap-4">
             <Button 
               onClick={() => setRequestFormOpen(true)}
               className="flex items-center gap-2"
             >
-              <FiPlus size={16} /> Request VM
+              <FiPlus size={16} /> Request New VM
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate("/student/vms")}
+              className="flex items-center gap-2"
+            >
+              <FiMonitor size={16} /> Manage My VMs
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate("/student/vm-requests")}
+              className="flex items-center gap-2"
+            >
+              <FiEye size={16} /> View All Requests
+            </Button>
+          </div>
+        </section>
+
+        {/* Recent VMs Section */}
+        <section>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Recent Virtual Machines</h2>
+            <Button 
+              variant="ghost" 
+              className="flex items-center gap-1 text-blue-600"
+              onClick={() => navigate("/student/vms")}
+            >
+              View all <FiArrowRight size={16} />
             </Button>
           </div>
           
           {vmsLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <FiLoader className="animate-spin mr-2" size={20} />
-              <p>Loading your virtual machines...</p>
-            </div>
+            <Card className="bg-slate-50">
+              <CardContent className="flex items-center justify-center py-12">
+                <FiLoader className="animate-spin mr-2" size={20} />
+                <p>Loading your virtual machines...</p>
+              </CardContent>
+            </Card>
           ) : vmsError ? (
             <Card className="bg-red-50 border-red-200">
               <CardContent className="flex items-center justify-between py-6">
@@ -112,10 +177,10 @@ const StudentDashboard: React.FC = () => {
                 </Button>
               </CardContent>
             </Card>
-          ) : myVms.length === 0 ? (
+          ) : recentVms.length === 0 ? (
             <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <FiMonitor className="text-slate-400 mb-2" size={40} />
+              <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+                <FiMonitor className="text-slate-400 mb-2" size={32} />
                 <h3 className="text-lg font-medium mb-1">No Virtual Machines</h3>
                 <p className="text-slate-500 mb-4">You don't have any virtual machines yet.</p>
                 <Button onClick={() => setRequestFormOpen(true)}>
@@ -125,7 +190,7 @@ const StudentDashboard: React.FC = () => {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {myVms.map((vm) => (
+              {recentVms.map((vm) => (
                 <Card key={vm.id || vm.name} className="overflow-hidden border">
                   <CardHeader className="bg-slate-50 dark:bg-slate-800 border-b">
                     <CardTitle className="text-lg flex items-center justify-between">
@@ -163,18 +228,6 @@ const StudentDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="mb-4">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-slate-600 dark:text-slate-400">
-                          VM Allocation
-                        </span>
-                        <span className="text-slate-600 dark:text-slate-400">
-                          Ready
-                        </span>
-                      </div>
-                      <Progress value={100} className="h-1.5" />
-                    </div>
-
                     <div className="flex justify-between mt-4">
                       {vm.status === "running" ? (
                         <>
@@ -187,39 +240,142 @@ const StudentDashboard: React.FC = () => {
                             <FiPower size={16} className="mr-2" /> Stop
                           </Button>
                           <Button
-                            variant="outline"
+                            variant="default"
                             size="sm"
-                            onClick={() => handleRestartVm(vm.name)}
+                            onClick={() => navigate(`/student/vms`)}
                           >
-                            <FiRotateCw size={16} className="mr-2" /> Restart
+                            Connect
                           </Button>
                         </>
                       ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-green-600 border-green-200 hover:bg-green-50"
-                          onClick={() => handleStartVm(vm.name)}
-                        >
-                          <FiPower size={16} className="mr-2" /> Start
-                        </Button>
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-green-600 border-green-200 hover:bg-green-50"
+                            onClick={() => handleStartVm(vm.name)}
+                          >
+                            <FiPower size={16} className="mr-2" /> Start
+                          </Button>
+                          <Button 
+                            variant="default" 
+                            size="sm"
+                            onClick={() => navigate(`/student/vms`)}
+                          >
+                            Details
+                          </Button>
+                        </>
                       )}
-                      <Button variant="default" size="sm">
-                        Connect
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           )}
-        </div>
 
-        {/* VM Requests Section */}
-        <div>
-          <MyVMRequests onRefreshRequested={() => refetchVMs()} />
-        </div>
+          {!vmsLoading && !vmsError && myVms.length > 2 && (
+            <div className="mt-4 text-center">
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/student/vms")}
+                className="w-full sm:w-auto"
+              >
+                View All {myVms.length} Virtual Machines
+              </Button>
+            </div>
+          )}
+        </section>
 
+        {/* Recent Requests Section */}
+        <section>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Recent VM Requests</h2>
+            <Button 
+              variant="ghost" 
+              className="flex items-center gap-1 text-blue-600"
+              onClick={() => navigate("/student/vm-requests")}
+            >
+              View all <FiArrowRight size={16} />
+            </Button>
+          </div>
+
+          {requestsLoading ? (
+            <Card className="bg-slate-50">
+              <CardContent className="flex items-center justify-center py-6">
+                <FiLoader className="animate-spin mr-2" size={20} />
+                <p>Loading your VM requests...</p>
+              </CardContent>
+            </Card>
+          ) : requestsError ? (
+            <Card className="bg-red-50 border-red-200">
+              <CardContent className="flex items-center justify-between py-6">
+                <div className="flex items-center">
+                  <FiAlertCircle className="text-red-500 mr-2" size={20} />
+                  <p>Error loading your VM requests</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : recentRequests.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <p className="text-muted-foreground">
+                  You haven't made any VM requests yet.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {recentRequests.map((request) => (
+                <Card key={request.id}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="font-medium">{request.purpose}</h3>
+                      <span
+                        className={`text-sm px-2 py-1 rounded-full ${
+                          request.status === "approved"
+                            ? "bg-green-100 text-green-600"
+                            : request.status === "rejected"
+                            ? "bg-red-100 text-red-600"
+                            : "bg-amber-100 text-amber-600"
+                        }`}
+                      >
+                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Requested on {new Date(request.created_at).toLocaleDateString()}
+                    </p>
+                    <div className="flex flex-wrap gap-3 mt-2 text-sm">
+                      <div className="flex items-center">
+                        <FiCpu className="mr-1 text-slate-500" /> {request.vcpus || 1} vCPUs
+                      </div>
+                      <div className="flex items-center">
+                        <FaMemory className="mr-1 text-slate-500" /> {request.memory || 1024} MB
+                      </div>
+                      <div className="flex items-center">
+                        <FiHardDrive className="mr-1 text-slate-500" /> {request.storage || 10} GB
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {!requestsLoading && !requestsError && vmRequests.length > 3 && (
+            <div className="mt-4 text-center">
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/student/vm-requests")}
+                className="w-full sm:w-auto"
+              >
+                View All {vmRequests.length} Requests
+              </Button>
+            </div>
+          )}
+        </section>
+
+        {/* Request VM Dialog */}
         <Dialog open={requestFormOpen} onOpenChange={setRequestFormOpen}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
