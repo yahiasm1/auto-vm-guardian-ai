@@ -46,5 +46,10 @@ async function startServer() {
   }
 }
 
-startServer();
+// Start the server if this file is run directly
+if (require.main === module) {
+  startServer();
+}
 
+// Export the app for use in other files (like server.js)
+module.exports = { app };
