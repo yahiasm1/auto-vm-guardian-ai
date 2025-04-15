@@ -1,4 +1,3 @@
-
 import api from './api';
 
 export interface VM {
@@ -188,7 +187,7 @@ export const vmService = {
    * Get all VM requests (admin only)
    */
   async getAllVMRequests(): Promise<VMRequest[]> {
-    const response = await api.get('/vm/requests');
+    const response = await api.get('/vms/requests');
     return response.data.requests;
   },
 
@@ -196,7 +195,7 @@ export const vmService = {
    * Get my VM requests (for students/instructors)
    */
   async getMyVMRequests(): Promise<VMRequest[]> {
-    const response = await api.get('/vm/my-requests');
+    const response = await api.get('/vms/my-requests');
     return response.data.requests;
   },
 
