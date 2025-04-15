@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -65,7 +64,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
   
   const isLinkActive = (path: string) => location.pathname.startsWith(path);
 
-  // Define navigation items based on user type
   const getNavigationItems = () => {
     const commonItems = [
       {
@@ -84,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
       return [
         ...commonItems,
         {
-          href: "/admin/requests",
+          href: "/admin/vm-requests",
           icon: <FiFileText size={20} />,
           text: "VM Requests",
         },
@@ -103,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ userType }) => {
       return [
         ...commonItems,
         {
-          href: `/${userType}/requests`,
+          href: `/${userType}/vm-requests`,
           icon: <FiFileText size={20} />,
           text: "My VM Requests",
         },
