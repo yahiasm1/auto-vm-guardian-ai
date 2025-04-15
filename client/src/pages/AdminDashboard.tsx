@@ -12,7 +12,11 @@ import { Link } from "react-router-dom";
 import { AdminVMRequests } from "@/components/VM/AdminVMRequests";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const AdminDashboard = () => {
+interface AdminDashboardProps {
+  initialTab?: string;
+}
+
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = "dashboard" }) => {
   // Mock data for demonstration 
   const vmData = [
     { id: 'vm1', name: 'Ubuntu Server', status: 'running', os: 'Ubuntu 22.04', cpu: 2, ram: 4, storage: 50, assignedTo: 'CS101 Group' },
@@ -28,7 +32,7 @@ const AdminDashboard = () => {
 
   return (
     <DashboardLayout title="Admin Dashboard" userType="admin">
-      <Tabs defaultValue="dashboard" className="mb-6">
+      <Tabs defaultValue={initialTab} className="mb-6">
         <TabsList>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="vm-requests">VM Requests</TabsTrigger>

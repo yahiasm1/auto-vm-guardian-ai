@@ -18,9 +18,13 @@ import { MyVMRequests } from "@/components/VM/MyVMRequests";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const StudentDashboard = () => {
+interface StudentDashboardProps {
+  initialTab?: string;
+}
+
+const StudentDashboard: React.FC<StudentDashboardProps> = ({ initialTab = "vms" }) => {
   const [requestFormOpen, setRequestFormOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("vms");
+  const [activeTab, setActiveTab] = useState(initialTab);
   
   // Mock data for virtual machines assigned to student
   const myVms = [

@@ -37,13 +37,50 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
 
-              {/* Protected routes */}
+              {/* Protected admin routes */}
               <Route path="/admin" element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminDashboard />
                 </ProtectedRoute>
               } />
+              <Route path="/admin/requests" element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard initialTab="vm-requests" />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/users" element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/settings" element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/vms" element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
+
+              {/* Protected student routes */}
               <Route path="/student" element={
+                <ProtectedRoute requiredRole="student">
+                  <StudentDashboard initialTab="vms" />
+                </ProtectedRoute>
+              } />
+              <Route path="/student/vms" element={
+                <ProtectedRoute requiredRole="student">
+                  <StudentDashboard initialTab="vms" />
+                </ProtectedRoute>
+              } />
+              <Route path="/student/requests" element={
+                <ProtectedRoute requiredRole="student">
+                  <StudentDashboard initialTab="requests" />
+                </ProtectedRoute>
+              } />
+              <Route path="/student/settings" element={
                 <ProtectedRoute requiredRole="student">
                   <StudentDashboard />
                 </ProtectedRoute>
