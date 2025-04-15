@@ -43,23 +43,62 @@ function App() {
           {/* Admin Routes */}
           <Route
             path="/admin"
-            element={<ProtectedRoute allowedRoles={["admin"]} />}
-          >
-            <Route index element={<AdminDashboard />} />
-            <Route path="vms" element={<AdminVMsPage />} />
-            <Route path="vm-requests" element={<AdminVMRequests />} />
-            <Route path="users" element={<AdminUsersPage />} />
-          </Route>
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/vms"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminVMsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/vm-requests"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminVMRequests />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminUsersPage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Student Routes */}
           <Route
             path="/student"
-            element={<ProtectedRoute allowedRoles={["student"]} />}
-          >
-            <Route index element={<StudentDashboard />} />
-            <Route path="vms" element={<StudentVMsPage />} />
-            <Route path="vm-requests" element={<StudentVMRequests />} />
-          </Route>
+            element={
+              <ProtectedRoute allowedRoles={["student"]}>
+                <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/vms"
+            element={
+              <ProtectedRoute allowedRoles={["student"]}>
+                <StudentVMsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/vm-requests"
+            element={
+              <ProtectedRoute allowedRoles={["student"]}>
+                <StudentVMRequests />
+              </ProtectedRoute>
+            }
+          />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
