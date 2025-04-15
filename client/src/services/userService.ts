@@ -20,6 +20,11 @@ export interface CreateUserPayload {
   department?: string;
 }
 
+export interface UpdateUserProfilePayload {
+  name?: string;
+  department?: string;
+}
+
 const userService = {
   /**
    * Get all users
@@ -34,6 +39,14 @@ const userService = {
    */
   async createUser(payload: CreateUserPayload): Promise<User> {
     const response = await api.post('/auth/register', payload);
+    return response.data.user;
+  },
+
+  /**
+   * Update current user's profile
+   */
+  async updateProfile(payload: UpdateUserProfilePayload): Promise<User> {
+    const response = await api.put('/users/profile', payload);
     return response.data.user;
   }
 };

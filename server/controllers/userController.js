@@ -1,4 +1,3 @@
-
 const db = require('../db/database');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require("uuid");
@@ -77,19 +76,13 @@ class UserController {
   
   /**
    * Update user info
+   * Uses the authenticated user's ID from the token
    */
   async updateUser(req, res) {
     try {
-      const { id } = req.params;
+      // Extract user ID from the token instead of URL parameters
+      const userId = req.user.id;
       const { name, department } = req.body;
-      
-      // Ensure user can only update their own info unless they're an admin
-      if (req.user.role !== 'admin' && req.user.id !== id) {
-        return res.status(403).json({
-          success: false,
-          message: 'You are not authorized to update this user'
-        });
-      }
       
       // Update user info
       const result = await db.query(
@@ -98,7 +91,7 @@ class UserController {
          department = COALESCE($2, department)
          WHERE id = $3
          RETURNING id, email, name, role, department, status`,
-        [name, department, id]
+        [name, department, userId]
       );
       
       if (result.rows.length === 0) {

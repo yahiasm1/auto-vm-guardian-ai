@@ -7,7 +7,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
-import api from '@/services/api';
+import userService from '@/services/userService';
 
 type InfoFormValues = {
   name: string;
@@ -26,8 +26,12 @@ export function InfoTab() {
   
   const onSubmit = async (data: InfoFormValues) => {
     try {
-      // Make an API call to update user info
-      await api.put(`/users/${user?.id}`, data);
+      // Make an API call to update user info using the new service method
+      const updatedUser = await userService.updateProfile(data);
+      
+      // Update user in auth context if needed
+      // This would require enhancing the auth context to have an updateUser function
+      
       toast.success('Personal information updated successfully');
     } catch (error: any) {
       console.error('Error updating profile:', error);
