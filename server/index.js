@@ -23,7 +23,7 @@ app.use(morgan("dev"));
 
 // Routes
 app.use("/api/auth", require("./routes/auth"));
-app.use("/api/vms", require("./routes/vm"));
+app.use("/api/vms", require("./routes/vms")); // Updated from /vm to /vms
 app.use("/api/users", require("./routes/users"));
 
 // Basic route for checking server status
@@ -47,3 +47,4 @@ async function startServer() {
 }
 
 startServer();
+
