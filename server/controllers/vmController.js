@@ -1,4 +1,3 @@
-
 const vmService = require('../services/vmService');
 const db = require('../db/database');
 
@@ -163,7 +162,6 @@ class VMController {
    * Shutdown a VM (graceful)
    */
   async shutdownVM(req, res) {
-    // ...similar to stopVM, with access control
     try {
       const { vmName } = req.params;
       
@@ -221,7 +219,6 @@ class VMController {
    * Restart a VM
    */
   async restartVM(req, res) {
-    // ...similar to startVM, with access control
     try {
       const { vmName } = req.params;
       
@@ -259,7 +256,6 @@ class VMController {
    * Suspend a VM
    */
   async suspendVM(req, res) {
-    // ...similar to startVM, with access control
     try {
       const { vmName } = req.params;
       
@@ -297,7 +293,6 @@ class VMController {
    * Resume a VM
    */
   async resumeVM(req, res) {
-    // ...similar to startVM, with access control
     try {
       const { vmName } = req.params;
       
@@ -350,6 +345,36 @@ class VMController {
   }
 
   /**
+   * List VMs owned by the current user (for students)
+   */
+  async getMyVMs(req, res) {
+    try {
+      const userId = req.user.id;
+      const onlyRunning = req.query.running === 'true';
+      
+      // Get all VMs
+      const allVMs = await vmService.listVMs(onlyRunning);
+      
+      // Filter VMs that belong to the current user
+      const userVMs = allVMs.filter(vm => {
+        // Check if VM has a user_id field and it matches the current user
+        return vm.user_id && vm.user_id === userId;
+      });
+      
+      return res.json({
+        success: true,
+        vms: userVMs
+      });
+    } catch (error) {
+      console.error('Error listing user VMs:', error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to list your VMs'
+      });
+    }
+  }
+  
+  /**
    * Request a new VM (for students and instructors)
    */
   async requestVM(req, res) {
@@ -388,7 +413,7 @@ class VMController {
       });
     }
   }
-
+  
   /**
    * List all VM requests (admin only)
    */

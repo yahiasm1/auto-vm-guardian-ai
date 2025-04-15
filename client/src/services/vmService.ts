@@ -1,3 +1,4 @@
+
 import api from './api';
 
 export interface VM {
@@ -78,6 +79,21 @@ export const vmService = {
    */
   async listVMs(onlyRunning = false): Promise<VM[]> {
     const response = await api.get(`/vms/list`, {
+      params: { onlyRunning }
+    });
+    
+    // Map the raw VM data to our standardized format for the frontend
+    return response.data.vms.map((vm: VM) => ({
+      ...vm,
+      status: this.mapStateToStatus(vm.state)
+    }));
+  },
+  
+  /**
+   * Get a list of VMs owned by the current user
+   */
+  async listMyVMs(onlyRunning = false): Promise<VM[]> {
+    const response = await api.get(`/vms/my-vms`, {
       params: { onlyRunning }
     });
     
@@ -179,7 +195,7 @@ export const vmService = {
    * Create a VM request
    */
   async requestVM(request: VMRequestPayload): Promise<{ success: boolean; message: string; requestId?: string }> {
-    const response = await api.post('/vm/request', request);
+    const response = await api.post('/vms/request', request);
     return response.data;
   },
 

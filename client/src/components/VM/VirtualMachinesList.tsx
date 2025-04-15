@@ -1,97 +1,265 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { VmCard } from "@/components/Dashboard/VmCard";
+import { vmService, VM } from "@/services/vmService";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { FiPlus, FiServer } from "react-icons/fi";
-import vmService, { VM } from "@/services/vmService";
-import { AddVMModal } from "./AddVMModal";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { FiMoreVertical, FiCpu, FiHardDrive } from "react-icons/fi";
+import { FaMemory } from "react-icons/fa";
 
-export const VirtualMachinesList: React.FC = () => {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
+export function VirtualMachinesList() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
+  // Use different endpoints based on user role
   const { data: vms, isLoading, error, refetch } = useQuery({
-    queryKey: ['vms'],
-    queryFn: () => vmService.listVMs(),
+    queryKey: ["vms", isAdmin ? "all" : "my"],
+    queryFn: () => isAdmin ? vmService.listVMs() : vmService.listMyVMs(),
   });
 
+  const [isActionInProgress, setIsActionInProgress] = useState(false);
+  const [selectedVM, setSelectedVM] = useState<VM | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  const handleVMAction = async (
+    vmName: string,
+    action: "start" | "stop" | "restart" | "suspend" | "resume"
+  ) => {
+    setIsActionInProgress(true);
+    try {
+      let result;
+      switch (action) {
+        case "start":
+          result = await vmService.startVM(vmName);
+          break;
+        case "stop":
+          result = await vmService.stopVM(vmName);
+          break;
+        case "restart":
+          result = await vmService.restartVM(vmName);
+          break;
+        case "suspend":
+          result = await vmService.suspendVM(vmName);
+          break;
+        case "resume":
+          result = await vmService.resumeVM(vmName);
+          break;
+      }
+
+      if (result.success) {
+        toast.success(result.message || `VM ${action} operation successful`);
+        refetch();
+      } else {
+        toast.error(result.message || `Failed to ${action} VM`);
+      }
+    } catch (error) {
+      console.error(`Error during ${action} operation:`, error);
+      toast.error(`Failed to ${action} VM: ${(error as Error).message}`);
+    } finally {
+      setIsActionInProgress(false);
+    }
+  };
+
+  const handleDeleteVM = async () => {
+    if (!selectedVM) return;
+
+    setIsActionInProgress(true);
+    try {
+      const result = await vmService.deleteVM(selectedVM.name);
+      if (result.success) {
+        toast.success(result.message || "VM deleted successfully");
+        refetch();
+      } else {
+        toast.error(result.message || "Failed to delete VM");
+      }
+    } catch (error) {
+      console.error("Error deleting VM:", error);
+      toast.error(`Failed to delete VM: ${(error as Error).message}`);
+    } finally {
+      setIsActionInProgress(false);
+      setShowDeleteDialog(false);
+      setSelectedVM(null);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "running":
+        return <Badge className="bg-green-500">Running</Badge>;
+      case "stopped":
+        return <Badge variant="outline">Stopped</Badge>;
+      case "suspended":
+        return <Badge variant="secondary">Suspended</Badge>;
+      case "creating":
+        return <Badge className="bg-blue-500">Creating</Badge>;
+      default:
+        return <Badge variant="destructive">Error</Badge>;
+    }
+  };
+
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
+    return <div className="p-4 text-center">Loading virtual machines...</div>;
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 p-4 rounded-md border border-red-200 text-red-700">
-        <h3 className="font-medium">Error loading VMs</h3>
-        <p className="text-sm mt-1">{(error as Error).message}</p>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="mt-2" 
-          onClick={() => refetch()}
-        >
-          Retry
+      <div className="p-4 text-center text-red-600">
+        Error loading VMs. 
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="ml-2">
+          Try Again
         </Button>
       </div>
     );
   }
 
-  const handleVMAdded = () => {
-    refetch();
-    toast.success("VM added successfully");
-  };
+  if (!vms || vms.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Virtual Machines</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-center py-6 text-muted-foreground">
+            No virtual machines found.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Virtual Machines</h2>
-        <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
-          <FiPlus size={16} /> Add VM
+        <h2 className="text-xl font-bold">Virtual Machines</h2>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isActionInProgress}>
+          Refresh
         </Button>
       </div>
 
-      {vms && vms.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {vms.map((vm: VM) => (
-            <VmCard
-              key={vm.id || vm.name}
-              vm={{
-                id: vm.id || vm.name,
-                name: vm.name,
-                status: vm.status || "error",
-                os: vm.os_type || "Linux",
-                cpu: vm.vcpus || 1,
-                ram: (vm.memory ? vm.memory / 1024 : 1),
-                storage: parseInt(vm.storage || "10"),
-                assignedTo: vm.user_id ? "User" : undefined,
-              }}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12 border border-dashed rounded-lg">
-          <FiServer size={40} className="mx-auto text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-medium">No VMs found</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Get started by creating a new virtual machine.
-          </p>
-          <Button onClick={() => setIsAddModalOpen(true)} className="mt-4">
-            <FiPlus className="mr-2" /> Add VM
-          </Button>
-        </div>
-      )}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {vms.map((vm) => (
+          <Card key={vm.id || vm.name} className="overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-lg font-medium">{vm.name}</CardTitle>
+              <div className="flex items-center space-x-2">
+                {getStatusBadge(vm.status || "unknown")}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" disabled={isActionInProgress}>
+                      <FiMoreVertical className="h-4 w-4" />
+                      <span className="sr-only">Actions</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {vm.status === "running" ? (
+                      <>
+                        <DropdownMenuItem onClick={() => handleVMAction(vm.name, "stop")}>
+                          Stop
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleVMAction(vm.name, "restart")}>
+                          Restart
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleVMAction(vm.name, "suspend")}>
+                          Suspend
+                        </DropdownMenuItem>
+                      </>
+                    ) : vm.status === "suspended" ? (
+                      <DropdownMenuItem onClick={() => handleVMAction(vm.name, "resume")}>
+                        Resume
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onClick={() => handleVMAction(vm.name, "start")}>
+                        Start
+                      </DropdownMenuItem>
+                    )}
+                    {isAdmin && (
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => {
+                          setSelectedVM(vm);
+                          setShowDeleteDialog(true);
+                        }}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-2">
+                {vm.description && (
+                  <p className="text-sm text-muted-foreground">{vm.description}</p>
+                )}
+                <div className="flex flex-wrap gap-3 mt-2">
+                  <div className="flex items-center text-sm">
+                    <FiCpu className="mr-1 text-slate-500" /> {vm.vcpus || 1} vCPUs
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <FaMemory className="mr-1 text-slate-500" /> {vm.memory || 1024} MB RAM
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <FiHardDrive className="mr-1 text-slate-500" /> {vm.storage || "10 GB"}
+                  </div>
+                </div>
+                {vm.ip_address && (
+                  <div className="text-sm mt-2">
+                    <span className="font-medium">IP Address:</span> {vm.ip_address}
+                  </div>
+                )}
+                {vm.os_type && (
+                  <div className="text-sm">
+                    <span className="font-medium">OS:</span> {vm.os_type}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-      <AddVMModal 
-        isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)} 
-        onVMAdded={handleVMAdded}
-      />
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the virtual machine{" "}
+              <span className="font-bold">{selectedVM?.name}</span>. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isActionInProgress}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteVM}
+              disabled={isActionInProgress}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isActionInProgress ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
-};
+}
 
+export default VirtualMachinesList;

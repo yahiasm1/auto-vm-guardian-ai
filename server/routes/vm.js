@@ -12,6 +12,13 @@ router.get(
   vmController.listVMs
 );
 
+// Get VMs owned by current user - for students
+router.get(
+  "/my-vms",
+  authenticateToken,
+  vmController.getMyVMs
+);
+
 // Create a new VM - admin only
 router.post(
   "/create",
