@@ -78,7 +78,7 @@ export const vmService = {
    * Get a list of all VMs
    */
   async listVMs(onlyRunning = false): Promise<VM[]> {
-    const response = await api.get(`/vm/list`, {
+    const response = await api.get(`/vms/list`, {
       params: { onlyRunning }
     });
     
