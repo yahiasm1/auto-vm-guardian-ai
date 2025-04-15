@@ -64,6 +64,28 @@ async function initDatabase() {
         )
       `);
 
+      // Create VM Requests table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS vm_requests (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          username TEXT,
+          purpose TEXT NOT NULL,
+          memory INTEGER,
+          vcpus INTEGER,
+          storage INTEGER,
+          os_type TEXT,
+          course TEXT,
+          duration TEXT,
+          description TEXT,
+          status TEXT NOT NULL DEFAULT 'pending',
+          response_message TEXT,
+          vm_id UUID REFERENCES vms(id) ON DELETE SET NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
       // Check if admin user exists, if not create default one
       const adminResult = await client.query(
         "SELECT * FROM users WHERE email = 'admin@example.com'"
