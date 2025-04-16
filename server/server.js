@@ -25,10 +25,16 @@ app.use(morgan("dev"));
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/vms", require("./routes/vms")); 
 app.use("/api/users", require("./routes/users"));
+app.use("/api/vm-types", require("./routes/vmTypes"));
 
 // Basic route for checking server status
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "Server is running" });
+});
+
+// Root route
+app.get("/", (req, res) => {
+  res.json({ message: "VM Management API" });
 });
 
 async function startServer() {
