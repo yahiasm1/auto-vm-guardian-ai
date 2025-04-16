@@ -1,12 +1,24 @@
-
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query"; 
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { toast } from "sonner";
 import { VMRequestPayload, vmService } from "@/services/vmService";
 import { vmTypeService } from "@/services/vmTypeService";
@@ -31,20 +43,22 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
 
   // Query to fetch VM types
   const { data: vmTypes = [], isLoading: loadingVmTypes } = useQuery({
-    queryKey: ['vm-types'],
+    queryKey: ["vm-types"],
     queryFn: vmTypeService.getAllVMTypes,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (name: keyof VMRequestPayload, value: string) => {
-    if (name === 'vm_type_id') {
+    if (name === "vm_type_id") {
       // Update OS type based on selected VM type
-      const selectedVmType = vmTypes.find(type => type.id === value);
+      const selectedVmType = vmTypes.find((type) => type.id === value);
       if (selectedVmType) {
         setFormData((prev) => ({
           ...prev,
@@ -66,7 +80,7 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.purpose) {
       toast.error("Please specify a purpose for this VM request");
       return;
@@ -80,7 +94,7 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
     try {
       setIsSubmitting(true);
       const result = await vmService.requestVM(formData);
-      
+
       if (result.success) {
         toast.success("VM request submitted successfully");
         // Reset form
@@ -113,7 +127,8 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
       <CardHeader>
         <CardTitle>Request a Virtual Machine</CardTitle>
         <CardDescription>
-          Fill out this form to request a new virtual machine for your work or coursework.
+          Fill out this form to request a new virtual machine for your work or
+          coursework.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -130,7 +145,7 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
                 required
               />
             </div>
-            
+
             <div className="grid gap-2">
               <Label htmlFor="course">Course/Project</Label>
               <Input
@@ -146,16 +161,22 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
               <Label htmlFor="vm_type_id">VM Type</Label>
               <Select
                 value={formData.vm_type_id}
-                onValueChange={(value) => handleSelectChange("vm_type_id", value)}
+                onValueChange={(value) =>
+                  handleSelectChange("vm_type_id", value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select VM Type" />
                 </SelectTrigger>
                 <SelectContent>
                   {loadingVmTypes ? (
-                    <SelectItem value="loading" disabled>Loading VM types...</SelectItem>
+                    <SelectItem value="loading" disabled>
+                      Loading VM types...
+                    </SelectItem>
                   ) : vmTypes.length === 0 ? (
-                    <SelectItem value="none" disabled>No VM types available</SelectItem>
+                    <SelectItem value="none" disabled>
+                      No VM types available
+                    </SelectItem>
                   ) : (
                     vmTypes.map((vmType) => (
                       <SelectItem key={vmType.id} value={vmType.id}>
@@ -166,7 +187,7 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
                 </SelectContent>
               </Select>
             </div>
-              
+
             <div className="grid gap-2">
               <Label htmlFor="duration">Duration</Label>
               <Select
@@ -200,7 +221,7 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
                   onChange={handleNumberChange}
                 />
               </div>
-              
+
               <div className="grid gap-2">
                 <Label htmlFor="vcpus">vCPUs</Label>
                 <Input
@@ -212,7 +233,7 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
                   onChange={handleNumberChange}
                 />
               </div>
-              
+
               <div className="grid gap-2">
                 <Label htmlFor="storage">Storage (GB)</Label>
                 <Input
@@ -238,7 +259,7 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
               />
             </div>
           </div>
-          
+
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? "Submitting..." : "Submit Request"}
           </Button>

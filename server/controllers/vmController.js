@@ -478,6 +478,7 @@ class VMController {
         vcpus,
         storage,
         os_type,
+        vm_type_id,
         course,
         duration,
         description,
@@ -496,8 +497,8 @@ class VMController {
       // Save VM request to database
       const result = await db.query(
         `INSERT INTO vm_requests 
-         (user_id, username, purpose, memory, vcpus, storage, os_type, course, duration, description, status) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+         (user_id, username, purpose, memory, vcpus, storage, os_type,vm_type_id, course, duration, description, status) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,$12) 
          RETURNING id`,
         [
           userId,
@@ -507,6 +508,7 @@ class VMController {
           vcpus,
           storage,
           os_type.id,
+          vm_type_id,
           course,
           duration,
           description,
@@ -580,6 +582,7 @@ class VMController {
   /**
    * Approve a VM request (admin only)
    */
+
   async approveVMRequest(req, res) {
     try {
       const { requestId } = req.params;
@@ -599,7 +602,7 @@ class VMController {
 
       const request = requestResult.rows[0];
 
-      // Request is already processed
+      // Already processed?
       if (request.status !== "pending") {
         return res.status(400).json({
           success: false,
@@ -607,32 +610,49 @@ class VMController {
         });
       }
 
-      // Create the VM using the request details and additional config from admin
+      // Fetch VM type (needed for iso_path & os_type validation)
+      const vmTypeResult = await db.query(
+        `SELECT * FROM vm_types WHERE id = $1`,
+        [request.vm_type_id]
+      );
+
+      if (vmTypeResult.rows.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "The associated VM type does not exist.",
+        });
+      }
+
+      const vmType = vmTypeResult.rows[0];
+
+      // Build the VM config
       const vmConfig = {
         name: req.body.name || `vm-${request.id.substring(0, 8)}`,
         memory: req.body.memory || request.memory || 1024,
         vcpus: req.body.vcpus || request.vcpus || 1,
-        storage: req.body.storage || request.storage || 10,
-        os_type: req.body.os_type || request.os_type || "linux",
+        storage: req.body.storage || request.storage || 5,
+        os_type: vmType.os_type, // use DB value, not user override
+        iso_path: vmType.iso_path,
+        vm_type_id: vmType.id,
+        user_id: request.user_id,
         description:
           req.body.description ||
           `VM created for ${request.purpose}${
             request.course ? ` - Course: ${request.course}` : ""
           }`,
-        user_id: request.user_id,
       };
 
-      // Create the VM
+      // Create VM
       const vmResult = await vmService.createVM(vmConfig);
 
-      // Update the request status
+      // Mark request as approved
       await db.query(
         `UPDATE vm_requests 
-         SET status = $1, 
-             vm_id = $2, 
-             response_message = $3, 
-             updated_at = NOW() 
-         WHERE id = $4`,
+       SET status = $1, 
+           vm_id = $2, 
+           response_message = $3, 
+           updated_at = NOW() 
+       WHERE id = $4`,
         [
           "approved",
           vmResult.vm?.id || null,
