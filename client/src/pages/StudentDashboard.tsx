@@ -1,11 +1,21 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/Layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MyVMRequests } from "@/components/VM/MyVMRequests";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { RequestVMForm } from "@/components/VM/RequestVMForm";
 import { useNavigate } from "react-router-dom";
 import { vmService, VM } from "@/services/vmService";
@@ -21,7 +31,7 @@ import {
   FiAlertCircle,
   FiLoader,
   FiArrowRight,
-  FiEye
+  FiEye,
 } from "react-icons/fi";
 import { FaMemory } from "react-icons/fa";
 import { Progress } from "@/components/ui/progress";
@@ -29,13 +39,13 @@ import { Progress } from "@/components/ui/progress";
 const StudentDashboard: React.FC = () => {
   const [requestFormOpen, setRequestFormOpen] = useState(false);
   const navigate = useNavigate();
-  
+
   // Fetch real VMs from the API
-  const { 
-    data: myVms = [], 
-    isLoading: vmsLoading, 
+  const {
+    data: myVms = [],
+    isLoading: vmsLoading,
     error: vmsError,
-    refetch: refetchVMs
+    refetch: refetchVMs,
   } = useQuery({
     queryKey: ["myVMs"],
     queryFn: () => vmService.listMyVMs(),
@@ -45,7 +55,7 @@ const StudentDashboard: React.FC = () => {
   const {
     data: vmRequests = [],
     isLoading: requestsLoading,
-    error: requestsError
+    error: requestsError,
   } = useQuery({
     queryKey: ["vmRequests", "my"],
     queryFn: () => vmService.getMyVMRequests(),
@@ -53,12 +63,14 @@ const StudentDashboard: React.FC = () => {
 
   // Calculate statistics
   const totalVms = myVms.length;
-  const runningVms = myVms.filter(vm => vm.status === "running").length;
-  const pendingRequests = vmRequests.filter(req => req.status === "pending").length;
+  const runningVms = myVms.filter((vm) => vm.status === "running").length;
+  const pendingRequests = vmRequests.filter(
+    (req) => req.status === "pending"
+  ).length;
 
   // Get only the most recent VMs (limit to 2)
   const recentVms = myVms.slice(0, 2);
-  
+
   // Get only the most recent requests (limit to 3)
   const recentRequests = vmRequests.slice(0, 3);
 
@@ -100,7 +112,7 @@ const StudentDashboard: React.FC = () => {
 
   const handleRequestSubmitted = () => {
     setRequestFormOpen(false);
-    navigate("/student/requests");
+    navigate("/student/vm-requests");
   };
 
   return (
@@ -109,33 +121,33 @@ const StudentDashboard: React.FC = () => {
         {/* Statistics Overview */}
         <section>
           <h2 className="text-xl font-semibold mb-4">Overview</h2>
-          <StudentDashboardStats 
+          <StudentDashboardStats
             totalVms={totalVms}
             runningVms={runningVms}
             pendingRequests={pendingRequests}
           />
         </section>
-        
+
         {/* Quick Actions */}
         <section>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Quick Actions</h2>
           </div>
           <div className="flex flex-wrap gap-4">
-            <Button 
+            <Button
               onClick={() => setRequestFormOpen(true)}
               className="flex items-center gap-2"
             >
               <FiPlus size={16} /> Request New VM
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={() => navigate("/student/vms")}
               className="flex items-center gap-2"
             >
               <FiMonitor size={16} /> Manage My VMs
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={() => navigate("/student/vm-requests")}
               className="flex items-center gap-2"
@@ -149,15 +161,15 @@ const StudentDashboard: React.FC = () => {
         <section>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Recent Virtual Machines</h2>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="flex items-center gap-1 text-blue-600"
               onClick={() => navigate("/student/vms")}
             >
               View all <FiArrowRight size={16} />
             </Button>
           </div>
-          
+
           {vmsLoading ? (
             <Card className="bg-slate-50">
               <CardContent className="flex items-center justify-center py-12">
@@ -170,9 +182,15 @@ const StudentDashboard: React.FC = () => {
               <CardContent className="flex items-center justify-between py-6">
                 <div className="flex items-center">
                   <FiAlertCircle className="text-red-500 mr-2" size={20} />
-                  <p>Error loading your virtual machines. Please try again later.</p>
+                  <p>
+                    Error loading your virtual machines. Please try again later.
+                  </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => refetchVMs()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchVMs()}
+                >
                   Retry
                 </Button>
               </CardContent>
@@ -181,8 +199,12 @@ const StudentDashboard: React.FC = () => {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-8 text-center">
                 <FiMonitor className="text-slate-400 mb-2" size={32} />
-                <h3 className="text-lg font-medium mb-1">No Virtual Machines</h3>
-                <p className="text-slate-500 mb-4">You don't have any virtual machines yet.</p>
+                <h3 className="text-lg font-medium mb-1">
+                  No Virtual Machines
+                </h3>
+                <p className="text-slate-500 mb-4">
+                  You don't have any virtual machines yet.
+                </p>
                 <Button onClick={() => setRequestFormOpen(true)}>
                   Request a VM
                 </Button>
@@ -204,7 +226,8 @@ const StudentDashboard: React.FC = () => {
                             : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
                         }`}
                       >
-                        {vm.status?.charAt(0).toUpperCase() + vm.status?.slice(1) || "Unknown"}
+                        {vm.status?.charAt(0).toUpperCase() +
+                          vm.status?.slice(1) || "Unknown"}
                       </span>
                     </CardTitle>
                   </CardHeader>
@@ -215,7 +238,7 @@ const StudentDashboard: React.FC = () => {
                         {vm.os_type || "Unknown OS"}
                       </div>
                       <div className="flex items-center">
-                        <FiCpu size={16} className="mr-2 text-slate-500" /> 
+                        <FiCpu size={16} className="mr-2 text-slate-500" />
                         {vm.vcpus || "?"} vCPUs
                       </div>
                       <div className="flex items-center">
@@ -223,7 +246,10 @@ const StudentDashboard: React.FC = () => {
                         {vm.memory ? `${vm.memory} MB` : "?"} RAM
                       </div>
                       <div className="flex items-center">
-                        <FiHardDrive size={16} className="mr-2 text-slate-500" />
+                        <FiHardDrive
+                          size={16}
+                          className="mr-2 text-slate-500"
+                        />
                         {vm.storage || "?"} GB
                       </div>
                     </div>
@@ -257,8 +283,8 @@ const StudentDashboard: React.FC = () => {
                           >
                             <FiPower size={16} className="mr-2" /> Start
                           </Button>
-                          <Button 
-                            variant="default" 
+                          <Button
+                            variant="default"
                             size="sm"
                             onClick={() => navigate(`/student/vms`)}
                           >
@@ -275,8 +301,8 @@ const StudentDashboard: React.FC = () => {
 
           {!vmsLoading && !vmsError && myVms.length > 2 && (
             <div className="mt-4 text-center">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => navigate("/student/vms")}
                 className="w-full sm:w-auto"
               >
@@ -290,8 +316,8 @@ const StudentDashboard: React.FC = () => {
         <section>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Recent VM Requests</h2>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="flex items-center gap-1 text-blue-600"
               onClick={() => navigate("/student/vm-requests")}
             >
@@ -339,21 +365,26 @@ const StudentDashboard: React.FC = () => {
                             : "bg-amber-100 text-amber-600"
                         }`}
                       >
-                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                        {request.status.charAt(0).toUpperCase() +
+                          request.status.slice(1)}
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">
-                      Requested on {new Date(request.created_at).toLocaleDateString()}
+                      Requested on{" "}
+                      {new Date(request.created_at).toLocaleDateString()}
                     </p>
                     <div className="flex flex-wrap gap-3 mt-2 text-sm">
                       <div className="flex items-center">
-                        <FiCpu className="mr-1 text-slate-500" /> {request.vcpus || 1} vCPUs
+                        <FiCpu className="mr-1 text-slate-500" />{" "}
+                        {request.vcpus || 1} vCPUs
                       </div>
                       <div className="flex items-center">
-                        <FaMemory className="mr-1 text-slate-500" /> {request.memory || 1024} MB
+                        <FaMemory className="mr-1 text-slate-500" />{" "}
+                        {request.memory || 1024} MB
                       </div>
                       <div className="flex items-center">
-                        <FiHardDrive className="mr-1 text-slate-500" /> {request.storage || 10} GB
+                        <FiHardDrive className="mr-1 text-slate-500" />{" "}
+                        {request.storage || 10} GB
                       </div>
                     </div>
                   </CardContent>
@@ -364,8 +395,8 @@ const StudentDashboard: React.FC = () => {
 
           {!requestsLoading && !requestsError && vmRequests.length > 3 && (
             <div className="mt-4 text-center">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => navigate("/student/vm-requests")}
                 className="w-full sm:w-auto"
               >

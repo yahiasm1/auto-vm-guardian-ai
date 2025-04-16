@@ -1,15 +1,14 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/Layout/DashboardLayout";
 import { vmService, VMRequest } from "@/services/vmService";
-import { 
-  Table, 
-  TableHeader, 
-  TableRow, 
-  TableHead, 
-  TableBody, 
-  TableCell 
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,14 +25,21 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 const AdminVMRequests: React.FC = () => {
-  const [selectedRequest, setSelectedRequest] = useState<VMRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<VMRequest | null>(
+    null
+  );
   const [rejectReason, setRejectReason] = useState("");
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [vmName, setVmName] = useState("");
 
-  const { data: requests, isLoading, error, refetch } = useQuery({
+  const {
+    data: requests,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["vm-requests"],
     queryFn: vmService.getAllVMRequests,
   });
@@ -74,7 +80,7 @@ const AdminVMRequests: React.FC = () => {
     setIsProcessing(true);
     try {
       const result = await vmService.rejectVMRequest(
-        selectedRequest.id, 
+        selectedRequest.id,
         rejectReason || "Your VM request has been rejected."
       );
 
@@ -131,8 +137,7 @@ const AdminVMRequests: React.FC = () => {
 
   return (
     <DashboardLayout title="VM Requests" userType="admin">
-      <div className="flex justify-between mb-6">
-        <h1 className="text-2xl font-bold">VM Requests</h1>
+      <div className="flex justify-end mb-6">
         <Button variant="outline" onClick={() => refetch()}>
           Refresh
         </Button>
@@ -217,24 +222,46 @@ const AdminVMRequests: React.FC = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="vm-name">
+              <label
+                className="block text-sm font-medium mb-1"
+                htmlFor="vm-name"
+              >
                 VM Name (optional)
               </label>
-              <Input 
-                id="vm-name" 
-                value={vmName} 
+              <Input
+                id="vm-name"
+                value={vmName}
                 onChange={(e) => setVmName(e.target.value)}
                 placeholder="Enter VM name or leave empty for auto-generated"
               />
             </div>
             <div>
-              <h4 className="text-sm font-medium mb-2">Requested Specifications</h4>
+              <h4 className="text-sm font-medium mb-2">
+                Requested Specifications
+              </h4>
               <div className="bg-muted p-3 rounded text-sm">
-                <p><strong>Purpose:</strong> {selectedRequest?.purpose}</p>
-                <p><strong>vCPU:</strong> {selectedRequest?.vcpus || "Default"}</p>
-                <p><strong>RAM:</strong> {selectedRequest?.memory ? `${selectedRequest.memory} MB` : "Default"}</p>
-                <p><strong>Storage:</strong> {selectedRequest?.storage ? `${selectedRequest.storage} GB` : "Default"}</p>
-                <p><strong>OS Type:</strong> {selectedRequest?.os_type || "Default"}</p>
+                <p>
+                  <strong>Purpose:</strong> {selectedRequest?.purpose}
+                </p>
+                <p>
+                  <strong>vCPU:</strong> {selectedRequest?.vcpus || "Default"}
+                </p>
+                <p>
+                  <strong>RAM:</strong>{" "}
+                  {selectedRequest?.memory
+                    ? `${selectedRequest.memory} MB`
+                    : "Default"}
+                </p>
+                <p>
+                  <strong>Storage:</strong>{" "}
+                  {selectedRequest?.storage
+                    ? `${selectedRequest.storage} GB`
+                    : "Default"}
+                </p>
+                <p>
+                  <strong>OS Type:</strong>{" "}
+                  {selectedRequest?.os_type || "Default"}
+                </p>
               </div>
             </div>
           </div>
@@ -260,12 +287,16 @@ const AdminVMRequests: React.FC = () => {
             <DialogTitle>Reject VM Request</DialogTitle>
             <DialogDescription>
               You are about to reject the VM request from{" "}
-              {selectedRequest?.username || "unknown user"}. Please provide a reason.
+              {selectedRequest?.username || "unknown user"}. Please provide a
+              reason.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="reject-reason">
+              <label
+                className="block text-sm font-medium mb-1"
+                htmlFor="reject-reason"
+              >
                 Reason for rejection
               </label>
               <Textarea
@@ -285,7 +316,11 @@ const AdminVMRequests: React.FC = () => {
             >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleReject} disabled={isProcessing}>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={isProcessing}
+            >
               {isProcessing ? "Processing..." : "Reject Request"}
             </Button>
           </DialogFooter>

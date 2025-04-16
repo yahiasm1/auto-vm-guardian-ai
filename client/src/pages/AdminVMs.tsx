@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/Layout/DashboardLayout";
 import { vmService, VM } from "@/services/vmService";
-import { 
-  Table, 
-  TableHeader, 
-  TableRow, 
-  TableHead, 
-  TableBody, 
-  TableCell 
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,12 @@ const AdminVMsPage: React.FC = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const { data: vms, isLoading, error, refetch } = useQuery({
+  const {
+    data: vms,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["admin-vms"],
     queryFn: vmService.listVMs,
   });
@@ -75,6 +80,18 @@ const AdminVMsPage: React.FC = () => {
     } catch (error) {
       console.error(`Error during ${action} operation:`, error);
       toast.error(`Failed to ${action} VM: ${(error as Error).message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  const handleCleanUnusedDisks = async () => {
+    setIsProcessing(true);
+    try {
+      const result = await vmService.cleanUnusedDisks();
+      toast.success(`Deleted ${result.count} unused disk(s).`);
+    } catch (error) {
+      console.error("Error cleaning unused disks:", error);
+      toast.error(`Failed to clean unused disks: ${(error as Error).message}`);
     } finally {
       setIsProcessing(false);
     }
@@ -140,10 +157,9 @@ const AdminVMsPage: React.FC = () => {
 
   return (
     <DashboardLayout title="Virtual Machines" userType="admin">
-      <div className="flex justify-between mb-6">
-        <h1 className="text-2xl font-bold">Virtual Machines</h1>
+      <div className="flex justify-end mb-6">
         <div className="flex gap-2">
-          <Button 
+          <Button
             onClick={() => setShowCreateDialog(true)}
             className="flex items-center gap-1"
           >
@@ -152,6 +168,13 @@ const AdminVMsPage: React.FC = () => {
           </Button>
           <Button variant="outline" onClick={() => refetch()}>
             Refresh
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleCleanUnusedDisks}
+            disabled={isProcessing}
+          >
+            Clean Unused Disks
           </Button>
         </div>
       </div>
@@ -174,12 +197,16 @@ const AdminVMsPage: React.FC = () => {
               {vms.map((vm) => (
                 <TableRow key={vm.id || vm.name}>
                   <TableCell className="font-medium">{vm.name}</TableCell>
-                  <TableCell>{getStatusBadge(vm.status || "unknown")}</TableCell>
+                  <TableCell>
+                    {getStatusBadge(vm.status || "unknown")}
+                  </TableCell>
                   <TableCell>{vm.os_type || "unknown"}</TableCell>
                   <TableCell>
                     {vm.vcpus && `${vm.vcpus} vCPU • `}
                     {vm.memory && `${vm.memory} MB RAM • `}
-                    {typeof vm.storage === 'string' ? vm.storage : `${vm.storage} GB`}
+                    {typeof vm.storage === "string"
+                      ? vm.storage
+                      : `${vm.storage} GB`}
                   </TableCell>
                   <TableCell>{vm.ip_address || "N/A"}</TableCell>
                   <TableCell>
@@ -190,7 +217,11 @@ const AdminVMsPage: React.FC = () => {
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" disabled={isProcessing}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={isProcessing}
+                        >
                           <FiMoreVertical className="h-4 w-4" />
                           <span className="sr-only">Actions</span>
                         </Button>
@@ -198,22 +229,32 @@ const AdminVMsPage: React.FC = () => {
                       <DropdownMenuContent align="end">
                         {vm.status === "running" ? (
                           <>
-                            <DropdownMenuItem onClick={() => handleVMAction(vm.name, "stop")}>
+                            <DropdownMenuItem
+                              onClick={() => handleVMAction(vm.name, "stop")}
+                            >
                               Stop
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleVMAction(vm.name, "restart")}>
+                            <DropdownMenuItem
+                              onClick={() => handleVMAction(vm.name, "restart")}
+                            >
                               Restart
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleVMAction(vm.name, "suspend")}>
+                            <DropdownMenuItem
+                              onClick={() => handleVMAction(vm.name, "suspend")}
+                            >
                               Suspend
                             </DropdownMenuItem>
                           </>
                         ) : vm.status === "suspended" ? (
-                          <DropdownMenuItem onClick={() => handleVMAction(vm.name, "resume")}>
+                          <DropdownMenuItem
+                            onClick={() => handleVMAction(vm.name, "resume")}
+                          >
                             Resume
                           </DropdownMenuItem>
                         ) : (
-                          <DropdownMenuItem onClick={() => handleVMAction(vm.name, "start")}>
+                          <DropdownMenuItem
+                            onClick={() => handleVMAction(vm.name, "start")}
+                          >
                             Start
                           </DropdownMenuItem>
                         )}
@@ -245,7 +286,8 @@ const AdminVMsPage: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Delete Virtual Machine</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the VM "{selectedVM?.name}"? This action cannot be undone.
+              Are you sure you want to delete the VM "{selectedVM?.name}"? This
+              action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -256,7 +298,11 @@ const AdminVMsPage: React.FC = () => {
             >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteVM} disabled={isProcessing}>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteVM}
+              disabled={isProcessing}
+            >
               {isProcessing ? "Processing..." : "Delete VM"}
             </Button>
           </DialogFooter>

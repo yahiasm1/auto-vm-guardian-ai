@@ -1,4 +1,3 @@
-
 const express = require("express");
 const router = express.Router();
 const vmController = require("../controllers/vmController");
@@ -13,11 +12,7 @@ router.get(
 );
 
 // Get VMs owned by current user - for students
-router.get(
-  "/my-vms",
-  authenticateToken,
-  vmController.getMyVMs
-);
+router.get("/my-vms", authenticateToken, vmController.getMyVMs);
 
 // Get recent VMs and resource stats for admin dashboard
 router.get(
@@ -35,12 +30,39 @@ router.post(
   vmController.createVM
 );
 
+router.post(
+  "/clean-unused-disks",
+  authenticateToken,
+  authorizeRoles(["admin"]),
+  vmController.cleanUnusedDisks
+);
+
 // VM request endpoints
 router.post("/request", authenticateToken, vmController.requestVM);
-router.get("/requests", authenticateToken, authorizeRoles(["admin"]), vmController.listVMRequests);
-router.get("/recent-requests", authenticateToken, authorizeRoles(["admin"]), vmController.getRecentVMRequests);
-router.post("/request/:requestId/approve", authenticateToken, authorizeRoles(["admin"]), vmController.approveVMRequest);
-router.post("/request/:requestId/reject", authenticateToken, authorizeRoles(["admin"]), vmController.rejectVMRequest);
+router.get(
+  "/requests",
+  authenticateToken,
+  authorizeRoles(["admin"]),
+  vmController.listVMRequests
+);
+router.get(
+  "/recent-requests",
+  authenticateToken,
+  authorizeRoles(["admin"]),
+  vmController.getRecentVMRequests
+);
+router.post(
+  "/request/:requestId/approve",
+  authenticateToken,
+  authorizeRoles(["admin"]),
+  vmController.approveVMRequest
+);
+router.post(
+  "/request/:requestId/reject",
+  authenticateToken,
+  authorizeRoles(["admin"]),
+  vmController.rejectVMRequest
+);
 router.get("/my-requests", authenticateToken, vmController.getMyVMRequests);
 
 // Get VM info

@@ -1,4 +1,3 @@
-
 const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
@@ -17,12 +16,12 @@ const pool = new Pool({
 // Initialize database tables
 async function initDatabase() {
   let client;
-  
+
   try {
     // Test the connection first
     client = await pool.connect();
     console.log("Successfully connected to PostgreSQL database");
-    
+
     // Create users table
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -48,7 +47,7 @@ async function initDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    
+
     // Create VM Types table
     await client.query(`
       CREATE TABLE IF NOT EXISTS vm_types (
@@ -70,6 +69,7 @@ async function initDatabase() {
         state TEXT NOT NULL DEFAULT 'stopped',
         uuid TEXT UNIQUE,
         os_type TEXT,
+        disk_path TEXT,
         memory INTEGER,
         vcpus INTEGER,
         storage TEXT,
@@ -159,7 +159,7 @@ async function initDatabase() {
 
     // Check if we have any VM types, if not add some defaults
     const vmTypesResult = await client.query("SELECT * FROM vm_types LIMIT 1");
-    
+
     if (vmTypesResult.rows.length === 0) {
       // Add some default VM types
       await client.query(`
@@ -170,7 +170,7 @@ async function initDatabase() {
           ('Debian 12', 'linux', '/iso/debian-12.0.0-amd64-netinst.iso', 'Debian stable minimal installation'),
           ('CentOS 7', 'linux', '/iso/CentOS-7-x86_64-DVD.iso', 'CentOS 7 server edition')
       `);
-      
+
       console.log("Default VM types created successfully");
     }
 

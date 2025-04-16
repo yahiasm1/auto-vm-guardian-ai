@@ -1,5 +1,5 @@
-
-import api from './api';
+import { mapStateToStatus } from "@/lib/utils";
+import api from "./api";
 
 export interface VM {
   id: string | null;
@@ -100,61 +100,61 @@ export const vmService = {
   async listVMs(onlyRunning = false): Promise<VM[]> {
     try {
       const response = await api.get(`/vms/list`, {
-        params: { onlyRunning }
+        params: { onlyRunning },
       });
-      
+
       // Map the raw VM data to our standardized format for the frontend
       return response.data.vms.map((vm: VM) => ({
         ...vm,
-        status: this.mapStateToStatus(vm.state)
+        status: mapStateToStatus(vm.state),
       }));
     } catch (error) {
-      console.error('Error listing VMs:', error);
+      console.error("Error listing VMs:", error);
       // Return empty array to avoid UI errors
       return [];
     }
   },
-  
+
   /**
    * Get admin dashboard data
    */
   async getDashboardData(): Promise<DashboardData> {
     try {
       const response = await api.get(`/vms/dashboard-data`);
-      
+
       // Handle successful response (200 or cached 304)
       const data = response.data;
-      
+
       // Map the raw VM state to status for recent VMs if they exist
       if (data.recentVms && Array.isArray(data.recentVms)) {
         data.recentVms = data.recentVms.map((vm: VM) => ({
           ...vm,
-          status: this.mapStateToStatus(vm.state)
+          status: this.mapStateToStatus(vm.state),
         }));
       }
-      
+
       return data;
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      
+      console.error("Error fetching dashboard data:", error);
+
       // Return a default structure that won't cause UI errors
       return {
         stats: {
           totalVms: 0,
-          runningVms: 0, 
+          runningVms: 0,
           storageUsed: 0,
-          activeUsers: 0
+          activeUsers: 0,
         },
         recentVms: [],
         resourceStats: {
           cpu: { used: 0, total: 100 },
           ram: { used: 0, total: 64 },
-          storage: { used: 0, total: 2 }
-        }
+          storage: { used: 0, total: 2 },
+        },
       };
     }
   },
-  
+
   /**
    * Get recent VM requests for admin dashboard
    */
@@ -163,35 +163,35 @@ export const vmService = {
       const response = await api.get(`/vms/recent-requests`);
       return response.data.requests || [];
     } catch (error) {
-      console.error('Error fetching recent VM requests:', error);
+      console.error("Error fetching recent VM requests:", error);
       return [];
     }
   },
-  
+
   /**
    * Get a list of VMs owned by the current user
    */
   async listMyVMs(onlyRunning = false): Promise<VM[]> {
     try {
       const response = await api.get(`/vms/my-vms`, {
-        params: { onlyRunning }
+        params: { onlyRunning },
       });
-      
+
       // Map the raw VM data to our standardized format for the frontend
       return response.data.vms.map((vm: VM) => ({
         ...vm,
-        status: this.mapStateToStatus(vm.state)
+        status: this.mapStateToStatus(vm.state),
       }));
     } catch (error) {
       // If it's a 304, return empty array since browser will use cached data
       if (error.response && error.response.status === 304) {
-        console.log('Using cached my VMs data');
+        console.log("Using cached my VMs data");
         return [];
       }
       throw error;
     }
   },
-  
+
   /**
    * Create a new VM
    */
@@ -199,20 +199,20 @@ export const vmService = {
     const response = await api.post(`/vms/create`, vmData);
     return response.data;
   },
-  
+
   /**
    * Get detailed info for a VM
    */
   async getVMInfo(vmName: string): Promise<VMInfo> {
     const response = await api.get(`/vms/${vmName}`);
     const vmInfo = response.data.vm;
-    
+
     return {
       ...vmInfo,
-      status: this.mapStateToStatus(vmInfo.state)
+      status: this.mapStateToStatus(vmInfo.state),
     };
   },
-  
+
   /**
    * Start a VM
    */
@@ -220,7 +220,7 @@ export const vmService = {
     const response = await api.post(`/vms/start/${vmName}`);
     return response.data;
   },
-  
+
   /**
    * Stop a VM forcefully
    */
@@ -228,7 +228,7 @@ export const vmService = {
     const response = await api.post(`/vms/stop/${vmName}`);
     return response.data;
   },
-  
+
   /**
    * Shutdown a VM gracefully
    */
@@ -236,7 +236,7 @@ export const vmService = {
     const response = await api.post(`/vms/shutdown/${vmName}`);
     return response.data;
   },
-  
+
   /**
    * Restart a VM
    */
@@ -244,17 +244,20 @@ export const vmService = {
     const response = await api.post(`/vms/restart/${vmName}`);
     return response.data;
   },
-  
+
   /**
    * Delete a VM
    */
-  async deleteVM(vmName: string, removeStorage = false): Promise<VMOperationResult> {
+  async deleteVM(
+    vmName: string,
+    removeStorage = false
+  ): Promise<VMOperationResult> {
     const response = await api.delete(`/vms/${vmName}`, {
-      params: { removeStorage }
+      params: { removeStorage },
     });
     return response.data;
   },
-  
+
   /**
    * Suspend a VM
    */
@@ -262,7 +265,7 @@ export const vmService = {
     const response = await api.post(`/vms/suspend/${vmName}`);
     return response.data;
   },
-  
+
   /**
    * Resume a VM
    */
@@ -270,20 +273,37 @@ export const vmService = {
     const response = await api.post(`/vms/resume/${vmName}`);
     return response.data;
   },
-  
+
   /**
    * Update VM details
    */
-  async updateVM(vmName: string, vmData: Partial<VM>): Promise<VMOperationResult> {
+  async updateVM(
+    vmName: string,
+    vmData: Partial<VM>
+  ): Promise<VMOperationResult> {
     const response = await api.put(`/vms/${vmName}`, vmData);
     return response.data;
   },
-  
+
+  /**
+   * Clean up unused .qcow2 disk files (admin only)
+   */
+  async cleanUnusedDisks(): Promise<{
+    success: boolean;
+    deleted: string[];
+    count: number;
+  }> {
+    const response = await api.post("/vms/clean-unused-disks");
+    return response.data;
+  },
+
   /**
    * Create a VM request
    */
-  async requestVM(request: VMRequestPayload): Promise<{ success: boolean; message: string; requestId?: string }> {
-    const response = await api.post('/vms/request', request);
+  async requestVM(
+    request: VMRequestPayload
+  ): Promise<{ success: boolean; message: string; requestId?: string }> {
+    const response = await api.post("/vms/request", request);
     return response.data;
   },
 
@@ -291,7 +311,7 @@ export const vmService = {
    * Get all VM requests (admin only)
    */
   async getAllVMRequests(): Promise<VMRequest[]> {
-    const response = await api.get('/vms/requests');
+    const response = await api.get("/vms/requests");
     return response.data.requests;
   },
 
@@ -300,12 +320,12 @@ export const vmService = {
    */
   async getMyVMRequests(): Promise<VMRequest[]> {
     try {
-      const response = await api.get('/vms/my-requests');
+      const response = await api.get("/vms/my-requests");
       return response.data.requests;
     } catch (error) {
       // If it's a 304, return empty array since browser will use cached data
       if (error.response && error.response.status === 304) {
-        console.log('Using cached my requests data');
+        console.log("Using cached my requests data");
         return [];
       }
       throw error;
@@ -315,33 +335,57 @@ export const vmService = {
   /**
    * Approve a VM request (admin only)
    */
-  async approveVMRequest(requestId: string, vmConfig?: CreateVMPayload): Promise<{ success: boolean; message: string }> {
-    const response = await api.post(`/vms/request/${requestId}/approve`, vmConfig || {});
+  async approveVMRequest(
+    requestId: string,
+    vmConfig?: CreateVMPayload
+  ): Promise<{ success: boolean; message: string }> {
+    const response = await api.post(
+      `/vms/request/${requestId}/approve`,
+      vmConfig || {}
+    );
     return response.data;
   },
 
   /**
    * Reject a VM request (admin only)
    */
-  async rejectVMRequest(requestId: string, reason: string): Promise<{ success: boolean; message: string }> {
-    const response = await api.post(`/vms/request/${requestId}/reject`, { reason });
+  async rejectVMRequest(
+    requestId: string,
+    reason: string
+  ): Promise<{ success: boolean; message: string }> {
+    const response = await api.post(`/vms/request/${requestId}/reject`, {
+      reason,
+    });
     return response.data;
   },
-  
+
   /**
    * Map libvirt state to frontend status
    */
-  mapStateToStatus(state: string): "running" | "stopped" | "suspended" | "creating" | "error" {
-    if (!state) return 'error';
-    
+  mapStateToStatus(
+    state: string
+  ): "running" | "stopped" | "suspended" | "creating" | "error" {
+    if (!state) return "error";
+
     state = state.toLowerCase();
-    
-    if (state.includes('running')) return 'running';
-    if (state.includes('shut off') || state.includes('shutoff') || state === 'stopped') return 'stopped';
-    if (state.includes('paused') || state.includes('suspended') || state === 'suspended') return 'suspended';
-    if (state.includes('creating') || state.includes('building')) return 'creating';
-    return 'error';
-  }
+
+    if (state.includes("running")) return "running";
+    if (
+      state.includes("shut off") ||
+      state.includes("shutoff") ||
+      state === "stopped"
+    )
+      return "stopped";
+    if (
+      state.includes("paused") ||
+      state.includes("suspended") ||
+      state === "suspended"
+    )
+      return "suspended";
+    if (state.includes("creating") || state.includes("building"))
+      return "creating";
+    return "error";
+  },
 };
 
 export default vmService;

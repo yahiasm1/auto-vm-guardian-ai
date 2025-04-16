@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { vmService, VM } from "@/services/vmService";
@@ -28,12 +27,17 @@ import { FaMemory } from "react-icons/fa";
 
 export function VirtualMachinesList() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
-  
+  const isAdmin = user?.role === "admin";
+
   // Use different endpoints based on user role
-  const { data: vms, isLoading, error, refetch } = useQuery({
+  const {
+    data: vms,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["vms", isAdmin ? "all" : "my"],
-    queryFn: () => isAdmin ? vmService.listVMs() : vmService.listMyVMs(),
+    queryFn: () => (isAdmin ? vmService.listVMs() : vmService.listMyVMs()),
   });
 
   const [isActionInProgress, setIsActionInProgress] = useState(false);
@@ -123,8 +127,13 @@ export function VirtualMachinesList() {
   if (error) {
     return (
       <div className="p-4 text-center text-red-600">
-        Error loading VMs. 
-        <Button variant="outline" size="sm" onClick={() => refetch()} className="ml-2">
+        Error loading VMs.
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          className="ml-2"
+        >
           Try Again
         </Button>
       </div>
@@ -134,12 +143,11 @@ export function VirtualMachinesList() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">Virtual Machines</h2>
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => refetch()} 
+        <div className="flex justify-end w-full">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
             disabled={isActionInProgress}
           >
             Refresh
@@ -147,7 +155,7 @@ export function VirtualMachinesList() {
         </div>
       </div>
 
-      {(!vms || vms.length === 0) ? (
+      {!vms || vms.length === 0 ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Virtual Machines</CardTitle>
@@ -168,7 +176,11 @@ export function VirtualMachinesList() {
                   {getStatusBadge(vm.status || "unknown")}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" disabled={isActionInProgress}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={isActionInProgress}
+                      >
                         <FiMoreVertical className="h-4 w-4" />
                         <span className="sr-only">Actions</span>
                       </Button>
@@ -176,22 +188,32 @@ export function VirtualMachinesList() {
                     <DropdownMenuContent align="end">
                       {vm.status === "running" ? (
                         <>
-                          <DropdownMenuItem onClick={() => handleVMAction(vm.name, "stop")}>
+                          <DropdownMenuItem
+                            onClick={() => handleVMAction(vm.name, "stop")}
+                          >
                             Stop
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleVMAction(vm.name, "restart")}>
+                          <DropdownMenuItem
+                            onClick={() => handleVMAction(vm.name, "restart")}
+                          >
                             Restart
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleVMAction(vm.name, "suspend")}>
+                          <DropdownMenuItem
+                            onClick={() => handleVMAction(vm.name, "suspend")}
+                          >
                             Suspend
                           </DropdownMenuItem>
                         </>
                       ) : vm.status === "suspended" ? (
-                        <DropdownMenuItem onClick={() => handleVMAction(vm.name, "resume")}>
+                        <DropdownMenuItem
+                          onClick={() => handleVMAction(vm.name, "resume")}
+                        >
                           Resume
                         </DropdownMenuItem>
                       ) : (
-                        <DropdownMenuItem onClick={() => handleVMAction(vm.name, "start")}>
+                        <DropdownMenuItem
+                          onClick={() => handleVMAction(vm.name, "start")}
+                        >
                           Start
                         </DropdownMenuItem>
                       )}
@@ -213,22 +235,28 @@ export function VirtualMachinesList() {
               <CardContent>
                 <div className="grid gap-2">
                   {vm.description && (
-                    <p className="text-sm text-muted-foreground">{vm.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {vm.description}
+                    </p>
                   )}
                   <div className="flex flex-wrap gap-3 mt-2">
                     <div className="flex items-center text-sm">
-                      <FiCpu className="mr-1 text-slate-500" /> {vm.vcpus || 1} vCPUs
+                      <FiCpu className="mr-1 text-slate-500" /> {vm.vcpus || 1}{" "}
+                      vCPUs
                     </div>
                     <div className="flex items-center text-sm">
-                      <FaMemory className="mr-1 text-slate-500" /> {vm.memory || 1024} MB RAM
+                      <FaMemory className="mr-1 text-slate-500" />{" "}
+                      {vm.memory || 1024} MB RAM
                     </div>
                     <div className="flex items-center text-sm">
-                      <FiHardDrive className="mr-1 text-slate-500" /> {vm.storage || "10 GB"}
+                      <FiHardDrive className="mr-1 text-slate-500" />{" "}
+                      {vm.storage || "10 GB"}
                     </div>
                   </div>
                   {vm.ip_address && (
                     <div className="text-sm mt-2">
-                      <span className="font-medium">IP Address:</span> {vm.ip_address}
+                      <span className="font-medium">IP Address:</span>{" "}
+                      {vm.ip_address}
                     </div>
                   )}
                   {vm.os_type && (
@@ -242,7 +270,7 @@ export function VirtualMachinesList() {
           ))}
         </div>
       )}
-      
+
       {/* Delete VM Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
@@ -250,11 +278,14 @@ export function VirtualMachinesList() {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete the virtual machine{" "}
-              <span className="font-bold">{selectedVM?.name}</span>. This action cannot be undone.
+              <span className="font-bold">{selectedVM?.name}</span>. This action
+              cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isActionInProgress}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isActionInProgress}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteVM}
               disabled={isActionInProgress}

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/Layout/DashboardLayout";
@@ -96,7 +95,7 @@ const AdminVMTypesPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       const result = await vmTypeService.deleteVMType(selectedVMType.id);
-      
+
       if (result.success) {
         toast.success(result.message);
         setShowDeleteDialog(false);
@@ -135,8 +134,7 @@ const AdminVMTypesPage: React.FC = () => {
 
   return (
     <DashboardLayout title="VM Types" userType="admin">
-      <div className="flex justify-between mb-6">
-        <h1 className="text-2xl font-bold">VM Types</h1>
+      <div className="flex justify-end mb-6">
         <div className="flex gap-2">
           <Button
             onClick={handleCreateClick}
@@ -242,8 +240,8 @@ const AdminVMTypesPage: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Delete VM Type</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the VM type "{selectedVMType?.name}"? This action
-              cannot be undone.
+              Are you sure you want to delete the VM type "
+              {selectedVMType?.name}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
