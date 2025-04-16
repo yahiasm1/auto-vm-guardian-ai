@@ -207,16 +207,17 @@ export const DirectVMCreation: React.FC<DirectVMCreationProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assign to User</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                  <Select onValueChange={field.onChange} value={field.value || undefined}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a user" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Not assigned</SelectItem>
+                      {/* Fixed: Empty string replaced with non-empty value */}
+                      <SelectItem value="none">Not assigned</SelectItem>
                       {loadingUsers ? (
-                        <SelectItem value="" disabled>Loading users...</SelectItem>
+                        <SelectItem value="loading" disabled>Loading users...</SelectItem>
                       ) : (
                         users?.filter(user => 
                           user.role === 'student' || user.role === 'instructor'

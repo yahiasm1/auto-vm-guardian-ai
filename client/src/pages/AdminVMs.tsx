@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/Layout/DashboardLayout";
@@ -241,7 +240,6 @@ const AdminVMsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Delete Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
@@ -265,7 +263,6 @@ const AdminVMsPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Create VM Dialog */}
       <DirectVMCreation
         isOpen={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
