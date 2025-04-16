@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
@@ -30,6 +31,7 @@ import {
 import { toast } from "sonner";
 import vmService, { CreateVMPayload } from "@/services/vmService";
 import userService from "@/services/userService";
+import { vmTypeService } from "@/services/vmTypeService";
 
 // Form schema validation
 const vmFormSchema = z.object({
@@ -37,7 +39,7 @@ const vmFormSchema = z.object({
   memory: z.coerce.number().min(512, "Min 512MB of RAM").max(16384, "Max 16GB of RAM"),
   vcpus: z.coerce.number().min(1, "Min 1 vCPU").max(16, "Max 16 vCPUs"),
   storage: z.coerce.number().min(5, "Min 5GB storage").max(500, "Max 500GB storage"),
-  os_type: z.string().min(1, "OS type is required"),
+  vm_type_id: z.string().min(1, "VM type is required"),
   description: z.string().optional(),
   user_id: z.string().optional(),
 });
@@ -71,6 +73,13 @@ export const DirectVMCreation: React.FC<DirectVMCreationProps> = ({
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
+  // Query to fetch VM types
+  const { data: vmTypes = [], isLoading: loadingVmTypes } = useQuery({
+    queryKey: ['vm-types'],
+    queryFn: vmTypeService.getAllVMTypes,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
   const form = useForm<VMFormValues>({
     resolver: zodResolver(vmFormSchema),
     defaultValues: {
@@ -78,7 +87,7 @@ export const DirectVMCreation: React.FC<DirectVMCreationProps> = ({
       memory: 1024,
       vcpus: 1,
       storage: 10,
-      os_type: "linux",
+      vm_type_id: "",
       description: "",
       user_id: "",
     },
@@ -88,12 +97,18 @@ export const DirectVMCreation: React.FC<DirectVMCreationProps> = ({
     setIsSubmitting(true);
     
     try {
+      const selectedVmType = vmTypes.find(type => type.id === values.vm_type_id);
+      
       const payload: CreateVMPayload = {
         ...values,
         // Convert memory to MB if entered in GB
         memory: values.memory < 100 ? values.memory * 1024 : values.memory,
         // Handle "none" value by setting user_id to null
         user_id: values.user_id === "none" ? null : values.user_id || null,
+        // Add OS type from the selected VM type
+        os_type: selectedVmType?.os_type || "linux",
+        // Add ISO path from the selected VM type
+        iso_path: selectedVmType?.iso_path,
       };
       
       await vmService.createVM(payload);
@@ -132,6 +147,37 @@ export const DirectVMCreation: React.FC<DirectVMCreationProps> = ({
               )}
             />
             
+            <FormField
+              control={form.control}
+              name="vm_type_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>VM Type</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select VM Type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {loadingVmTypes ? (
+                        <SelectItem value="loading" disabled>Loading VM types...</SelectItem>
+                      ) : vmTypes.length === 0 ? (
+                        <SelectItem value="none" disabled>No VM types available</SelectItem>
+                      ) : (
+                        vmTypes.map((vmType) => (
+                          <SelectItem key={vmType.id} value={vmType.id}>
+                            {vmType.name} ({vmType.os_type})
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -162,45 +208,19 @@ export const DirectVMCreation: React.FC<DirectVMCreationProps> = ({
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="storage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Storage (GB)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="os_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>OS Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select OS" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="linux">Linux</SelectItem>
-                        <SelectItem value="windows">Windows</SelectItem>
-                        <SelectItem value="macos">macOS</SelectItem>
-                        <SelectItem value="freebsd">FreeBSD</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="storage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Storage (GB)</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <FormField
               control={form.control}

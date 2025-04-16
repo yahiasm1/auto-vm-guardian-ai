@@ -1,3 +1,4 @@
+
 const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
@@ -47,6 +48,19 @@ async function initDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    
+    // Create VM Types table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS vm_types (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL UNIQUE,
+        os_type TEXT NOT NULL,
+        iso_path TEXT,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
     // Create VMs table
     await client.query(`
@@ -60,6 +74,7 @@ async function initDatabase() {
         vcpus INTEGER,
         storage TEXT,
         user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        vm_type_id UUID REFERENCES vm_types(id) ON DELETE SET NULL,
         description TEXT,
         ip_address TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -78,6 +93,7 @@ async function initDatabase() {
         vcpus INTEGER,
         storage INTEGER,
         os_type TEXT,
+        vm_type_id UUID REFERENCES vm_types(id) ON DELETE SET NULL,
         course TEXT,
         duration TEXT,
         description TEXT,
@@ -139,6 +155,23 @@ async function initDatabase() {
       );
 
       console.log("Default student user created successfully");
+    }
+
+    // Check if we have any VM types, if not add some defaults
+    const vmTypesResult = await client.query("SELECT * FROM vm_types LIMIT 1");
+    
+    if (vmTypesResult.rows.length === 0) {
+      // Add some default VM types
+      await client.query(`
+        INSERT INTO vm_types (name, os_type, iso_path, description)
+        VALUES 
+          ('Ubuntu 22.04 LTS', 'linux', '/iso/ubuntu-22.04-desktop-amd64.iso', 'Ubuntu Desktop Long Term Support release'),
+          ('Windows 10', 'windows', '/iso/windows10.iso', 'Windows 10 Professional'),
+          ('Debian 12', 'linux', '/iso/debian-12.0.0-amd64-netinst.iso', 'Debian stable minimal installation'),
+          ('CentOS 7', 'linux', '/iso/CentOS-7-x86_64-DVD.iso', 'CentOS 7 server edition')
+      `);
+      
+      console.log("Default VM types created successfully");
     }
 
     console.log("Database initialized successfully");

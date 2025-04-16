@@ -1,31 +1,32 @@
 
 const express = require("express");
 const cors = require("cors");
-const morgan = require("morgan");
-const cookieParser = require("cookie-parser");
+const { initDatabase } = require("./db/database");
+const authRoutes = require("./routes/auth");
+const userRoutes = require("./routes/users");
+const vmRoutes = require("./routes/vms");
+const vmTypeRoutes = require("./routes/vmTypes");
 
-// Create Express app
 const app = express();
 
-// Middlewares
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    credentials: true,
-  })
-);
+// Middleware
+app.use(cors());
 app.use(express.json());
-app.use(cookieParser());
-app.use(morgan("dev"));
+
+// Initialize database
+initDatabase()
+  .then(() => console.log("Database initialized"))
+  .catch((err) => console.error("Database initialization failed:", err));
 
 // Routes
-app.use("/api/auth", require("./routes/auth"));
-app.use("/api/vms", require("./routes/vms")); 
-app.use("/api/users", require("./routes/users"));
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/vms", vmRoutes);
+app.use("/api/vm-types", vmTypeRoutes);
 
-// Basic route for checking server status
-app.get("/api/health", (req, res) => {
-  res.status(200).json({ status: "Server is running" });
+// Root route
+app.get("/", (req, res) => {
+  res.json({ message: "VM Management API" });
 });
 
 module.exports = app;

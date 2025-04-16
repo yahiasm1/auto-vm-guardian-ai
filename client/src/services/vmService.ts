@@ -13,6 +13,7 @@ export interface VM {
   vcpus?: number;
   storage?: string;
   user_id?: string;
+  vm_type_id?: string; // New field for VM type
   created_at?: string;
   updated_at?: string;
 }
@@ -40,8 +41,9 @@ export interface CreateVMPayload {
   storage?: number; // in GB
   os_type?: string;
   iso_path?: string;
+  vm_type_id?: string; // New field for VM type
   description?: string;
-  user_id?: string;
+  user_id?: string | null;
 }
 
 export interface VMRequestPayload {
@@ -50,6 +52,7 @@ export interface VMRequestPayload {
   vcpus?: number;
   storage?: number;
   os_type?: string;
+  vm_type_id?: string; // New field for VM type
   course?: string;
   duration?: string; // e.g., "2 weeks", "1 semester"
   description?: string;
@@ -64,6 +67,7 @@ export interface VMRequest {
   vcpus?: number;
   storage?: number;
   os_type?: string;
+  vm_type_id?: string; // New field for VM type
   course?: string;
   duration?: string;
   description?: string;

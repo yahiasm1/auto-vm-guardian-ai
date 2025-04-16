@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query"; 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { VMRequestPayload, vmService } from "@/services/vmService";
+import { vmTypeService } from "@/services/vmTypeService";
 
 interface RequestVMFormProps {
   onRequestSubmitted?: () => void;
@@ -20,10 +22,18 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
     memory: 2048, // Default: 2GB
     vcpus: 2,
     storage: 20, // Default: 20GB
-    os_type: "linux",
+    os_type: "",
+    vm_type_id: "", // New field for VM type
     course: "",
     duration: "1 month",
     description: "",
+  });
+
+  // Query to fetch VM types
+  const { data: vmTypes = [], isLoading: loadingVmTypes } = useQuery({
+    queryKey: ['vm-types'],
+    queryFn: vmTypeService.getAllVMTypes,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -32,7 +42,21 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
   };
 
   const handleSelectChange = (name: keyof VMRequestPayload, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === 'vm_type_id') {
+      // Update OS type based on selected VM type
+      const selectedVmType = vmTypes.find(type => type.id === value);
+      if (selectedVmType) {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          os_type: selectedVmType.os_type,
+        }));
+      } else {
+        setFormData((prev) => ({ ...prev, [name]: value }));
+      }
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,6 +72,11 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
       return;
     }
 
+    if (!formData.vm_type_id) {
+      toast.error("Please select a VM type");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       const result = await vmService.requestVM(formData);
@@ -60,7 +89,8 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
           memory: 2048,
           vcpus: 2,
           storage: 20,
-          os_type: "linux",
+          os_type: "",
+          vm_type_id: "",
           course: "",
           duration: "1 month",
           description: "",
@@ -112,44 +142,49 @@ export function RequestVMForm({ onRequestSubmitted }: RequestVMFormProps) {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="os_type">Operating System</Label>
-                <Select
-                  value={formData.os_type}
-                  onValueChange={(value) => handleSelectChange("os_type", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select OS" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="linux">Linux</SelectItem>
-                    <SelectItem value="windows">Windows</SelectItem>
-                    <SelectItem value="macos">macOS</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="grid gap-2">
+              <Label htmlFor="vm_type_id">VM Type</Label>
+              <Select
+                value={formData.vm_type_id}
+                onValueChange={(value) => handleSelectChange("vm_type_id", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select VM Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {loadingVmTypes ? (
+                    <SelectItem value="loading" disabled>Loading VM types...</SelectItem>
+                  ) : vmTypes.length === 0 ? (
+                    <SelectItem value="none" disabled>No VM types available</SelectItem>
+                  ) : (
+                    vmTypes.map((vmType) => (
+                      <SelectItem key={vmType.id} value={vmType.id}>
+                        {vmType.name} ({vmType.os_type})
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
               
-              <div className="grid gap-2">
-                <Label htmlFor="duration">Duration</Label>
-                <Select
-                  value={formData.duration}
-                  onValueChange={(value) => handleSelectChange("duration", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select duration" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1 week">1 week</SelectItem>
-                    <SelectItem value="2 weeks">2 weeks</SelectItem>
-                    <SelectItem value="1 month">1 month</SelectItem>
-                    <SelectItem value="3 months">3 months</SelectItem>
-                    <SelectItem value="6 months">6 months</SelectItem>
-                    <SelectItem value="1 semester">1 semester</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="grid gap-2">
+              <Label htmlFor="duration">Duration</Label>
+              <Select
+                value={formData.duration}
+                onValueChange={(value) => handleSelectChange("duration", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select duration" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1 week">1 week</SelectItem>
+                  <SelectItem value="2 weeks">2 weeks</SelectItem>
+                  <SelectItem value="1 month">1 month</SelectItem>
+                  <SelectItem value="3 months">3 months</SelectItem>
+                  <SelectItem value="6 months">6 months</SelectItem>
+                  <SelectItem value="1 semester">1 semester</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
