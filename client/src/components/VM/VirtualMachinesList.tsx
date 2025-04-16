@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { vmService, VM } from "@/services/vmService";
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { DirectVMCreation } from "./DirectVMCreation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FiMoreVertical, FiCpu, FiHardDrive } from "react-icons/fi";
+import { FiMoreVertical, FiCpu, FiHardDrive, FiPlus } from "react-icons/fi";
 import { FaMemory } from "react-icons/fa";
 
 export function VirtualMachinesList() {
@@ -38,6 +40,7 @@ export function VirtualMachinesList() {
   const [isActionInProgress, setIsActionInProgress] = useState(false);
   const [selectedVM, setSelectedVM] = useState<VM | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const handleVMAction = async (
     vmName: string,
@@ -130,113 +133,138 @@ export function VirtualMachinesList() {
     );
   }
 
-  if (!vms || vms.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Virtual Machines</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-center py-6 text-muted-foreground">
-            No virtual machines found.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">Virtual Machines</h2>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isActionInProgress}>
-          Refresh
-        </Button>
+        <div className="flex space-x-2">
+          {isAdmin && (
+            <Button 
+              onClick={() => setShowCreateDialog(true)} 
+              size="sm"
+              className="flex items-center gap-1"
+            >
+              <FiPlus size={16} />
+              <span>Create VM</span>
+            </Button>
+          )}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetch()} 
+            disabled={isActionInProgress}
+          >
+            Refresh
+          </Button>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {vms.map((vm) => (
-          <Card key={vm.id || vm.name} className="overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg font-medium">{vm.name}</CardTitle>
-              <div className="flex items-center space-x-2">
-                {getStatusBadge(vm.status || "unknown")}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" disabled={isActionInProgress}>
-                      <FiMoreVertical className="h-4 w-4" />
-                      <span className="sr-only">Actions</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {vm.status === "running" ? (
-                      <>
-                        <DropdownMenuItem onClick={() => handleVMAction(vm.name, "stop")}>
-                          Stop
+      {(!vms || vms.length === 0) ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Virtual Machines</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-center py-6 text-muted-foreground">
+              No virtual machines found.
+              {isAdmin && (
+                <Button 
+                  variant="link" 
+                  onClick={() => setShowCreateDialog(true)} 
+                  className="px-2"
+                >
+                  Create one now
+                </Button>
+              )}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {vms.map((vm) => (
+            <Card key={vm.id || vm.name} className="overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-lg font-medium">{vm.name}</CardTitle>
+                <div className="flex items-center space-x-2">
+                  {getStatusBadge(vm.status || "unknown")}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" disabled={isActionInProgress}>
+                        <FiMoreVertical className="h-4 w-4" />
+                        <span className="sr-only">Actions</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {vm.status === "running" ? (
+                        <>
+                          <DropdownMenuItem onClick={() => handleVMAction(vm.name, "stop")}>
+                            Stop
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleVMAction(vm.name, "restart")}>
+                            Restart
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleVMAction(vm.name, "suspend")}>
+                            Suspend
+                          </DropdownMenuItem>
+                        </>
+                      ) : vm.status === "suspended" ? (
+                        <DropdownMenuItem onClick={() => handleVMAction(vm.name, "resume")}>
+                          Resume
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleVMAction(vm.name, "restart")}>
-                          Restart
+                      ) : (
+                        <DropdownMenuItem onClick={() => handleVMAction(vm.name, "start")}>
+                          Start
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleVMAction(vm.name, "suspend")}>
-                          Suspend
+                      )}
+                      {isAdmin && (
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={() => {
+                            setSelectedVM(vm);
+                            setShowDeleteDialog(true);
+                          }}
+                        >
+                          Delete
                         </DropdownMenuItem>
-                      </>
-                    ) : vm.status === "suspended" ? (
-                      <DropdownMenuItem onClick={() => handleVMAction(vm.name, "resume")}>
-                        Resume
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem onClick={() => handleVMAction(vm.name, "start")}>
-                        Start
-                      </DropdownMenuItem>
-                    )}
-                    {isAdmin && (
-                      <DropdownMenuItem
-                        className="text-red-600"
-                        onClick={() => {
-                          setSelectedVM(vm);
-                          setShowDeleteDialog(true);
-                        }}
-                      >
-                        Delete
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-2">
-                {vm.description && (
-                  <p className="text-sm text-muted-foreground">{vm.description}</p>
-                )}
-                <div className="flex flex-wrap gap-3 mt-2">
-                  <div className="flex items-center text-sm">
-                    <FiCpu className="mr-1 text-slate-500" /> {vm.vcpus || 1} vCPUs
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <FaMemory className="mr-1 text-slate-500" /> {vm.memory || 1024} MB RAM
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <FiHardDrive className="mr-1 text-slate-500" /> {vm.storage || "10 GB"}
-                  </div>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                {vm.ip_address && (
-                  <div className="text-sm mt-2">
-                    <span className="font-medium">IP Address:</span> {vm.ip_address}
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-2">
+                  {vm.description && (
+                    <p className="text-sm text-muted-foreground">{vm.description}</p>
+                  )}
+                  <div className="flex flex-wrap gap-3 mt-2">
+                    <div className="flex items-center text-sm">
+                      <FiCpu className="mr-1 text-slate-500" /> {vm.vcpus || 1} vCPUs
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <FaMemory className="mr-1 text-slate-500" /> {vm.memory || 1024} MB RAM
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <FiHardDrive className="mr-1 text-slate-500" /> {vm.storage || "10 GB"}
+                    </div>
                   </div>
-                )}
-                {vm.os_type && (
-                  <div className="text-sm">
-                    <span className="font-medium">OS:</span> {vm.os_type}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
+                  {vm.ip_address && (
+                    <div className="text-sm mt-2">
+                      <span className="font-medium">IP Address:</span> {vm.ip_address}
+                    </div>
+                  )}
+                  {vm.os_type && (
+                    <div className="text-sm">
+                      <span className="font-medium">OS:</span> {vm.os_type}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+      
+      {/* Delete VM Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -258,6 +286,15 @@ export function VirtualMachinesList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Create VM Dialog */}
+      <DirectVMCreation
+        isOpen={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+        onSuccess={() => {
+          refetch();
+        }}
+      />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+
 import api from './api';
 
 export interface VM {
@@ -40,6 +41,7 @@ export interface CreateVMPayload {
   os_type?: string;
   iso_path?: string;
   description?: string;
+  user_id?: string;
 }
 
 export interface VMRequestPayload {
