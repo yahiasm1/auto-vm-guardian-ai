@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -21,7 +20,7 @@ interface SidebarProps {
   onCloseMobileSidebar?: () => void;
 }
 
-export default function Sidebar({ userType, onCloseMobileSidebar }: SidebarProps) {
+export const Sidebar = ({ userType, onCloseMobileSidebar }: SidebarProps) => {
   const location = useLocation();
   const isAdmin = userType === "admin";
   const isMobile = useMobile();
@@ -131,4 +130,6 @@ export default function Sidebar({ userType, onCloseMobileSidebar }: SidebarProps
       </ScrollArea>
     </div>
   );
-}
+};
+
+export default Sidebar;
