@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
@@ -93,6 +92,8 @@ export const DirectVMCreation: React.FC<DirectVMCreationProps> = ({
         ...values,
         // Convert memory to MB if entered in GB
         memory: values.memory < 100 ? values.memory * 1024 : values.memory,
+        // Handle "none" value by setting user_id to null
+        user_id: values.user_id === "none" ? null : values.user_id || null,
       };
       
       await vmService.createVM(payload);
@@ -214,7 +215,6 @@ export const DirectVMCreation: React.FC<DirectVMCreationProps> = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {/* Fixed: Empty string replaced with non-empty value */}
                       <SelectItem value="none">Not assigned</SelectItem>
                       {loadingUsers ? (
                         <SelectItem value="loading" disabled>Loading users...</SelectItem>
