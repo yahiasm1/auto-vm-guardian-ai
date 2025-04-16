@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { DirectVMCreation } from "./DirectVMCreation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FiMoreVertical, FiCpu, FiHardDrive, FiPlus } from "react-icons/fi";
+import { FiMoreVertical, FiCpu, FiHardDrive } from "react-icons/fi";
 import { FaMemory } from "react-icons/fa";
 
 export function VirtualMachinesList() {
@@ -40,7 +39,6 @@ export function VirtualMachinesList() {
   const [isActionInProgress, setIsActionInProgress] = useState(false);
   const [selectedVM, setSelectedVM] = useState<VM | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const handleVMAction = async (
     vmName: string,
@@ -138,16 +136,6 @@ export function VirtualMachinesList() {
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold">Virtual Machines</h2>
         <div className="flex space-x-2">
-          {isAdmin && (
-            <Button 
-              onClick={() => setShowCreateDialog(true)} 
-              size="sm"
-              className="flex items-center gap-1"
-            >
-              <FiPlus size={16} />
-              <span>Create VM</span>
-            </Button>
-          )}
           <Button 
             variant="outline" 
             size="sm" 
@@ -167,15 +155,6 @@ export function VirtualMachinesList() {
           <CardContent>
             <p className="text-center py-6 text-muted-foreground">
               No virtual machines found.
-              {isAdmin && (
-                <Button 
-                  variant="link" 
-                  onClick={() => setShowCreateDialog(true)} 
-                  className="px-2"
-                >
-                  Create one now
-                </Button>
-              )}
             </p>
           </CardContent>
         </Card>
@@ -286,15 +265,6 @@ export function VirtualMachinesList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
-      {/* Create VM Dialog */}
-      <DirectVMCreation
-        isOpen={showCreateDialog}
-        onClose={() => setShowCreateDialog(false)}
-        onSuccess={() => {
-          refetch();
-        }}
-      />
     </div>
   );
 }

@@ -28,11 +28,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FiMoreVertical } from "react-icons/fi";
+import { FiMoreVertical, FiPlus } from "react-icons/fi";
+import { DirectVMCreation } from "@/components/VM/DirectVMCreation";
 
 const AdminVMsPage: React.FC = () => {
   const [selectedVM, setSelectedVM] = useState<VM | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const { data: vms, isLoading, error, refetch } = useQuery({
@@ -142,6 +144,13 @@ const AdminVMsPage: React.FC = () => {
       <div className="flex justify-between mb-6">
         <h1 className="text-2xl font-bold">Virtual Machines</h1>
         <div className="flex gap-2">
+          <Button 
+            onClick={() => setShowCreateDialog(true)}
+            className="flex items-center gap-1"
+          >
+            <FiPlus size={16} />
+            <span>Create VM</span>
+          </Button>
           <Button variant="outline" onClick={() => refetch()}>
             Refresh
           </Button>
@@ -255,6 +264,15 @@ const AdminVMsPage: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Create VM Dialog */}
+      <DirectVMCreation
+        isOpen={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+        onSuccess={() => {
+          refetch();
+        }}
+      />
     </DashboardLayout>
   );
 };
