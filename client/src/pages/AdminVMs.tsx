@@ -185,6 +185,7 @@ const AdminVMsPage: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>User</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>OS Type</TableHead>
                 <TableHead>Resources</TableHead>
@@ -194,13 +195,25 @@ const AdminVMsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vms.map((vm) => (
+              {vms.map((vm: VM) => (
                 <TableRow key={vm.id || vm.name}>
                   <TableCell className="font-medium">{vm.name}</TableCell>
+                  <TableCell className="font-medium flex flex-col">
+                    <span>
+                      {vm.user?.name || "Unknown"} &nbsp;
+                      {vm.user?.role ? ` (${vm.user.role})` : ""}
+                    </span>
+
+                    <span>{vm.user?.email}</span>
+                  </TableCell>
                   <TableCell>
                     {getStatusBadge(vm.status || "unknown")}
                   </TableCell>
-                  <TableCell>{vm.os_type || "unknown"}</TableCell>
+                  <TableCell>
+                    {vm.vm_type
+                      ? `${vm.vm_type.name} (${vm.vm_type.os_type})`
+                      : vm.os_type || "unknown"}
+                  </TableCell>
                   <TableCell>
                     {vm.vcpus && `${vm.vcpus} vCPU • `}
                     {vm.memory && `${vm.memory} MB RAM • `}
@@ -230,30 +243,40 @@ const AdminVMsPage: React.FC = () => {
                         {vm.status === "running" ? (
                           <>
                             <DropdownMenuItem
-                              onClick={() => handleVMAction(vm.name, "stop")}
+                              onClick={() =>
+                                handleVMAction(vm.libvirt_name, "stop")
+                              }
                             >
                               Stop
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleVMAction(vm.name, "restart")}
+                              onClick={() =>
+                                handleVMAction(vm.libvirt_name, "restart")
+                              }
                             >
                               Restart
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleVMAction(vm.name, "suspend")}
+                              onClick={() =>
+                                handleVMAction(vm.libvirt_name, "suspend")
+                              }
                             >
                               Suspend
                             </DropdownMenuItem>
                           </>
                         ) : vm.status === "suspended" ? (
                           <DropdownMenuItem
-                            onClick={() => handleVMAction(vm.name, "resume")}
+                            onClick={() =>
+                              handleVMAction(vm.libvirt_name, "resume")
+                            }
                           >
                             Resume
                           </DropdownMenuItem>
                         ) : (
                           <DropdownMenuItem
-                            onClick={() => handleVMAction(vm.name, "start")}
+                            onClick={() =>
+                              handleVMAction(vm.libvirt_name, "start")
+                            }
                           >
                             Start
                           </DropdownMenuItem>

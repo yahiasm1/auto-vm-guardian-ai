@@ -1,5 +1,4 @@
 const vmService = require("../services/vmService");
-const vmDbService = require("../services/vmDbService");
 const db = require("../db/database");
 
 /**
@@ -7,22 +6,53 @@ const db = require("../db/database");
  */
 class VMController {
   /**
-   * List all VMs (admin only)
+   * Get all VMs from the database with full user and vm_type objects attached
+   * @param {Object} filters - Optional filters
+   * @returns {Promise<Array>} - List of VMs with nested user and vm_type info
    */
   async listVMs(req, res) {
     try {
-      const onlyRunning = req.query.running === "true";
-      const vms = await vmService.listVMs(onlyRunning);
+      const filters = {};
+      const queryParams = [];
+      const conditions = [];
+
+      if (req.query.state) {
+        conditions.push(`vms.state = $${queryParams.length + 1}`);
+        queryParams.push(req.query.state);
+      }
+
+      if (req.query.user_id) {
+        conditions.push(`vms.user_id = $${queryParams.length + 1}`);
+        queryParams.push(req.query.user_id);
+      }
+
+      let queryText = `
+        SELECT 
+          vms.*, 
+          to_jsonb(u) AS user,
+          to_jsonb(t) AS vm_type
+        FROM vms
+        LEFT JOIN users u ON vms.user_id = u.id
+        LEFT JOIN vm_types t ON vms.vm_type_id = t.id
+      `;
+
+      if (conditions.length > 0) {
+        queryText += ` WHERE ` + conditions.join(" AND ");
+      }
+
+      queryText += " ORDER BY vms.created_at DESC";
+
+      const result = await db.query(queryText, queryParams);
 
       return res.json({
         success: true,
-        vms,
+        vms: result.rows,
       });
     } catch (error) {
-      console.error("Error listing VMs:", error);
+      console.error("Error getting VMs from database:", error);
       return res.status(500).json({
         success: false,
-        message: error.message || "Failed to list VMs",
+        message: error.message || "Failed to get VMs",
       });
     }
   }
@@ -44,7 +74,7 @@ class VMController {
 
       // Get total storage used (in GB)
       const storageResult = await db.query(
-        "SELECT COALESCE(SUM(NULLIF(storage, '')::numeric), 0) as total FROM vms"
+        "SELECT COALESCE(SUM(storage), 0) as total FROM vms"
       );
       const storageUsedGB = parseFloat(storageResult.rows[0].total) || 0;
       const storageUsedTB = (storageUsedGB / 1024).toFixed(2);
@@ -139,7 +169,7 @@ class VMController {
 
       // Only allow access if admin or VM belongs to user
       if (!isAdmin) {
-        const vm = await db.query("SELECT * FROM vms WHERE name = $1", [
+        const vm = await db.query("SELECT * FROM vms WHERE libvirt_name = $1", [
           vmName,
         ]);
 
@@ -195,9 +225,10 @@ class VMController {
       const isAdmin = req.user.role === "admin";
 
       if (!isAdmin) {
-        const vm = await db.query("SELECT * FROM vms WHERE name = $1", [
-          vmName,
-        ]);
+        const vm = await db.query(
+          "SELECT * FROM vms WHERE libvirt_libvirt_name = $1",
+          [vmName]
+        );
 
         if (vm.rows.length === 0 || vm.rows[0].user_id !== userId) {
           return res.status(403).json({
@@ -231,7 +262,7 @@ class VMController {
       const isAdmin = req.user.role === "admin";
 
       if (!isAdmin) {
-        const vm = await db.query("SELECT * FROM vms WHERE name = $1", [
+        const vm = await db.query("SELECT * FROM vms WHERE libvirt_name = $1", [
           vmName,
         ]);
 
@@ -267,7 +298,7 @@ class VMController {
       const isAdmin = req.user.role === "admin";
 
       if (!isAdmin) {
-        const vm = await db.query("SELECT * FROM vms WHERE name = $1", [
+        const vm = await db.query("SELECT * FROM vms WHERE libvirt_name = $1", [
           vmName,
         ]);
 
@@ -323,7 +354,7 @@ class VMController {
       const isAdmin = req.user.role === "admin";
 
       if (!isAdmin) {
-        const vm = await db.query("SELECT * FROM vms WHERE name = $1", [
+        const vm = await db.query("SELECT * FROM vms WHERE libvirt_name = $1", [
           vmName,
         ]);
 
@@ -359,7 +390,7 @@ class VMController {
       const isAdmin = req.user.role === "admin";
 
       if (!isAdmin) {
-        const vm = await db.query("SELECT * FROM vms WHERE name = $1", [
+        const vm = await db.query("SELECT * FROM vms WHERE libvirt_name = $1", [
           vmName,
         ]);
 
@@ -395,7 +426,7 @@ class VMController {
       const isAdmin = req.user.role === "admin";
 
       if (!isAdmin) {
-        const vm = await db.query("SELECT * FROM vms WHERE name = $1", [
+        const vm = await db.query("SELECT * FROM vms WHERE libvirt_name = $1", [
           vmName,
         ]);
 
@@ -443,26 +474,27 @@ class VMController {
   async getMyVMs(req, res) {
     try {
       const userId = req.user.id;
-      const onlyRunning = req.query.running === "true";
 
-      // Get all VMs
-      const allVMs = await vmService.listVMs(onlyRunning);
-
-      // Filter VMs that belong to the current user
-      const userVMs = allVMs.filter((vm) => {
-        // Check if VM has a user_id field and it matches the current user
-        return vm.user_id && vm.user_id === userId;
-      });
+      const result = await db.query(
+        `SELECT 
+         v.*, 
+         to_jsonb(t) AS vm_type 
+       FROM vms v
+       LEFT JOIN vm_types t ON v.vm_type_id = t.id
+       WHERE v.user_id = $1
+       ORDER BY v.created_at DESC`,
+        [userId]
+      );
 
       return res.json({
         success: true,
-        vms: userVMs,
+        vms: result.rows,
       });
     } catch (error) {
-      console.error("Error listing user VMs:", error);
+      console.error("Error getting user VMs:", error);
       return res.status(500).json({
         success: false,
-        message: error.message || "Failed to list your VMs",
+        message: error.message || "Failed to get your VMs",
       });
     }
   }
@@ -484,7 +516,11 @@ class VMController {
         description,
       } = req.body;
       const userId = req.user.id;
-      const username = req.user.name || req.user.email;
+      const userResult = await db.query(` 
+          SELECT email, name
+	         FROM public.users where id='${userId}'`);
+      const { name = "", email = "" } = await userResult.rows[0];
+      const username = name + " (" + email + ")";
 
       // Validate request
       if (!purpose) {
@@ -560,9 +596,14 @@ class VMController {
     try {
       const userId = req.user.id;
 
-      // Get user's requests from database
       const result = await db.query(
-        `SELECT * FROM vm_requests WHERE user_id = $1 ORDER BY created_at DESC`,
+        `SELECT 
+         r.*, 
+         to_jsonb(t) AS vm_type 
+       FROM vm_requests r
+       LEFT JOIN vm_types t ON r.vm_type_id = t.id
+       WHERE r.user_id = $1 
+       ORDER BY r.created_at DESC`,
         [userId]
       );
 

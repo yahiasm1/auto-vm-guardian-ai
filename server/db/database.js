@@ -72,7 +72,7 @@ async function initDatabase() {
         disk_path TEXT,
         memory INTEGER,
         vcpus INTEGER,
-        storage TEXT,
+        storage INTEGER,
         user_id UUID REFERENCES users(id) ON DELETE SET NULL,
         vm_type_id UUID REFERENCES vm_types(id) ON DELETE SET NULL,
         description TEXT,

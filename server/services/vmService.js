@@ -11,7 +11,6 @@ function runCommand(cmd, allowSudoFallback = false) {
 
       const permissionDenied = stderr.includes("Permission denied");
 
-      // Try with sudo fallback if allowed and this is a permission issue
       if (permissionDenied && allowSudoFallback && !cmd.startsWith("sudo")) {
         const sudoCmd = `sudo ${cmd}`;
         console.warn(`[Permission denied] Retrying with sudo: ${sudoCmd}`);
@@ -41,36 +40,32 @@ class VMService {
       ip_address,
     } = vmData;
 
-    // 1. Validate VM type against DB
-    const vmTypeResult = await query(`SELECT * FROM vm_types WHERE id = $1`, [
+    const vmTypeResult = await query("SELECT * FROM vm_types WHERE id = $1", [
       vm_type_id,
     ]);
     const vmType = vmTypeResult.rows[0];
 
-    if (!vmType) {
+    if (!vmType)
       throw new Error("Invalid VM Type selected. No matching type found.");
-    }
-
     if (vmType.os_type !== os_type || vmType.iso_path !== iso_path) {
       throw new Error(
         "VM type mismatch: OS type or ISO path does not match the selected VM type."
       );
     }
 
-    // 2. Prepare paths and VM disk
-    const vmDiskId = uuidv4();
+    const uuid = uuidv4();
     const sanitizedName = name.replace(/\s+/g, "-");
-    const diskPath = `/var/lib/libvirt/images/vms/${sanitizedName}-${vmDiskId}.qcow2`;
+    const libvirtName = `${sanitizedName}-${uuid}`;
+    const diskPath = `/var/lib/libvirt/images/vms/${libvirtName}.qcow2`;
     const isoFullPath = path.resolve(iso_path);
 
-    const createDiskCmd = `qemu-img create -f qcow2 "${diskPath}" ${parseInt(
+    const createDiskCmd = `qemu-img create -f qcow2 \"${diskPath}\" ${parseInt(
       storage
     )}G`;
     await runCommand(createDiskCmd, true);
 
-    // 3. Run virt-install
     const installCmd = `virt-install \
-      --name "${name}" \
+      --name \"${libvirtName}\" \
       --ram ${memory} \
       --vcpus ${vcpus} \
       --disk path=\"${diskPath}\",format=qcow2 \
@@ -83,12 +78,11 @@ class VMService {
 
     await runCommand(installCmd);
 
-    // 4. Save metadata to DB
     const createdVM = await vmDbService.createVM({
       name,
       memory,
       vcpus,
-      storage: `${storage}G`,
+      storage,
       os_type,
       disk_path: diskPath,
       iso_path,
@@ -97,6 +91,8 @@ class VMService {
       ip_address,
       vm_type_id,
       state: "running",
+      libvirt_name: libvirtName,
+      uuid,
     });
 
     return {
@@ -106,61 +102,68 @@ class VMService {
     };
   }
 
-  async startVM(name) {
-    await runCommand(`virsh start ${name}`);
-    const updated = await vmDbService.updateVMState(name, "running");
-    return { success: true, message: `VM ${name} started`, vm: updated };
+  async startVM(libvirtName) {
+    await runCommand(`virsh start ${libvirtName}`);
+    const updated = await vmDbService.updateVMState(libvirtName, "running");
+    return { success: true, message: `VM ${libvirtName} started`, vm: updated };
   }
 
-  async stopVM(name) {
-    await runCommand(`virsh destroy ${name}`);
-    const updated = await vmDbService.updateVMState(name, "stopped");
-    return { success: true, message: `VM ${name} stopped`, vm: updated };
+  async stopVM(libvirtName) {
+    await runCommand(`virsh destroy ${libvirtName}`);
+    const updated = await vmDbService.updateVMState(libvirtName, "stopped");
+    return { success: true, message: `VM ${libvirtName} stopped`, vm: updated };
   }
 
-  async shutdownVM(name) {
-    await runCommand(`virsh shutdown ${name}`);
-    const updated = await vmDbService.updateVMState(name, "shutting-down");
+  async shutdownVM(libvirtName) {
+    await runCommand(`virsh shutdown ${libvirtName}`);
+    const updated = await vmDbService.updateVMState(
+      libvirtName,
+      "shutting-down"
+    );
     return {
       success: true,
-      message: `VM ${name} is shutting down`,
+      message: `VM ${libvirtName} is shutting down`,
       vm: updated,
     };
   }
 
-  async restartVM(name) {
-    await runCommand(`virsh reboot ${name}`);
-    return { success: true, message: `VM ${name} restarted` };
+  async restartVM(libvirtName) {
+    await runCommand(`virsh reboot ${libvirtName}`);
+    return { success: true, message: `VM ${libvirtName} restarted` };
   }
 
-  async suspendVM(name) {
-    await runCommand(`virsh suspend ${name}`);
-    const updated = await vmDbService.updateVMState(name, "suspended");
-    return { success: true, message: `VM ${name} suspended`, vm: updated };
+  async suspendVM(libvirtName) {
+    await runCommand(`virsh suspend ${libvirtName}`);
+    const updated = await vmDbService.updateVMState(libvirtName, "suspended");
+    return {
+      success: true,
+      message: `VM ${libvirtName} suspended`,
+      vm: updated,
+    };
   }
 
-  async resumeVM(name) {
-    await runCommand(`virsh resume ${name}`);
-    const updated = await vmDbService.updateVMState(name, "running");
-    return { success: true, message: `VM ${name} resumed`, vm: updated };
+  async resumeVM(libvirtName) {
+    await runCommand(`virsh resume ${libvirtName}`);
+    const updated = await vmDbService.updateVMState(libvirtName, "running");
+    return { success: true, message: `VM ${libvirtName} resumed`, vm: updated };
   }
 
-  async deleteVM(name, removeStorage = false) {
-    const vm = await vmDbService.getVMByName(name);
-    await runCommand(`virsh destroy ${name}`).catch(() => {});
-    await runCommand(`virsh undefine ${name}`);
+  async deleteVM(libvirtName, removeStorage = false) {
+    const vm = await vmDbService.getVMByName(libvirtName);
+    await runCommand(`virsh destroy ${libvirtName}`).catch(() => {});
+    await runCommand(`virsh undefine ${libvirtName}`);
 
     if (removeStorage) {
-      await runCommand(`rm -f "${vm.disk_path}"`);
+      await runCommand(`rm -f \"${vm.disk_path}\"`);
     }
 
-    const deleted = await vmDbService.deleteVM(name);
-    return { success: true, message: `VM ${name} deleted`, deleted };
+    const deleted = await vmDbService.deleteVM(libvirtName);
+    return { success: true, message: `VM ${libvirtName} deleted`, deleted };
   }
 
-  async getVMInfo(name) {
-    const result = await runCommand(`virsh dominfo ${name}`);
-    return { name, info: result };
+  async getVMInfo(libvirtName) {
+    const result = await runCommand(`virsh dominfo ${libvirtName}`);
+    return { name: libvirtName, info: result };
   }
 
   async listVMs(onlyRunning = false) {
@@ -183,41 +186,34 @@ class VMService {
 
     const allVMsFromDb = await vmDbService.getAllVMs();
 
-    const merged = allVMsFromDb
-      .filter((vm) => activeVMs.find((v) => v.name === vm.name) !== undefined)
-      .map((vm) => {
-        const match = activeVMs.find((v) => v.name === vm.name);
-        return {
-          ...vm,
-          real_state: match ? match.state : "shut off",
-          virsh_id: match ? match.id : null,
-        };
-      });
+    const merged = allVMsFromDb.map((vm) => {
+      const match = activeVMs.find((v) => v.name === vm.libvirt_name);
+      return {
+        ...vm,
+        real_state: match ? match.state : "shut off",
+        virsh_id: match ? match.id : null,
+      };
+    });
 
     return merged;
   }
+
   async cleanUnusedDisks() {
     const fs = require("fs/promises");
     const diskDir = "/var/lib/libvirt/images/vms";
-
-    // 1. Read all .qcow2 files in the directory
     const allFiles = await fs.readdir(diskDir);
     const qcowFiles = allFiles.filter((file) => file.endsWith(".qcow2"));
-
-    // 2. Get all disk paths from the DB
     const allVMs = await vmDbService.getAllVMs();
     const usedPaths = allVMs.map((vm) => vm.disk_path);
 
-    // 3. Determine unused files
     const unused = qcowFiles.filter((filename) => {
       const fullPath = `${diskDir}/${filename}`;
       return !usedPaths.includes(fullPath);
     });
 
-    // 4. Delete unused files
     for (const filename of unused) {
       const fullPath = `${diskDir}/${filename}`;
-      await runCommand(`rm -f "${fullPath}"`, true);
+      await runCommand(`rm -f \"${fullPath}\"`, true);
       console.log(`[cleaned] Deleted unused disk: ${fullPath}`);
     }
 

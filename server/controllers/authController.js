@@ -226,12 +226,16 @@ exports.changePassword = async (req, res) => {
   const userId = req.user.id;
 
   if (!currentPassword || !newPassword) {
-    return res.status(400).json({ error: "Current password and new password are required" });
+    return res
+      .status(400)
+      .json({ error: "Current password and new password are required" });
   }
 
   try {
     // Get user's current password
-    const result = await query("SELECT password FROM users WHERE id = $1", [userId]);
+    const result = await query("SELECT password FROM users WHERE id = $1", [
+      userId,
+    ]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "User not found" });
@@ -252,7 +256,7 @@ exports.changePassword = async (req, res) => {
     // Update password
     await query("UPDATE users SET password = $1 WHERE id = $2", [
       hashedPassword,
-      userId
+      userId,
     ]);
 
     res.json({ message: "Password updated successfully" });

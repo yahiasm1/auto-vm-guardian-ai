@@ -1,5 +1,4 @@
-
-import api from './api';
+import api from "./api";
 
 export interface User {
   id: string;
@@ -25,20 +24,28 @@ export interface UpdateUserProfilePayload {
   department?: string;
 }
 
+export interface UpdateUserPayload {
+  id: string;
+  name?: string;
+  password?: string;
+  department?: string;
+  role?: string;
+}
+
 const userService = {
   /**
-   * Get all users
+   * Get all users (admin only)
    */
   async getUsers(): Promise<User[]> {
-    const response = await api.get('/users');
+    const response = await api.get("/users");
     return response.data.users || [];
   },
-  
+
   /**
    * Create a new user (admin only)
    */
   async createUser(payload: CreateUserPayload): Promise<User> {
-    const response = await api.post('/auth/register', payload);
+    const response = await api.post("/auth/register", payload);
     return response.data.user;
   },
 
@@ -46,9 +53,24 @@ const userService = {
    * Update current user's profile
    */
   async updateProfile(payload: UpdateUserProfilePayload): Promise<User> {
-    const response = await api.put('/users/profile', payload);
+    const response = await api.put("/users/profile", payload);
     return response.data.user;
-  }
+  },
+
+  /**
+   * Update user (admin only)
+   */
+  async updateUser(payload: UpdateUserPayload): Promise<User> {
+    const response = await api.put(`/users/${payload.id}`, payload);
+    return response.data.user;
+  },
+
+  /**
+   * Delete user (admin only)
+   */
+  async deleteUser(id: string): Promise<void> {
+    await api.delete(`/users/${id}`);
+  },
 };
 
 export default userService;

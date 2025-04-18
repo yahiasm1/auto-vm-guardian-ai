@@ -88,7 +88,7 @@ export function VirtualMachinesList() {
 
     setIsActionInProgress(true);
     try {
-      const result = await vmService.deleteVM(selectedVM.name);
+      const result = await vmService.deleteVM(selectedVM.libvirt_name);
       if (result.success) {
         toast.success(result.message || "VM deleted successfully");
         refetch();
@@ -189,30 +189,40 @@ export function VirtualMachinesList() {
                       {vm.status === "running" ? (
                         <>
                           <DropdownMenuItem
-                            onClick={() => handleVMAction(vm.name, "stop")}
+                            onClick={() =>
+                              handleVMAction(vm.libvirt_name, "stop")
+                            }
                           >
                             Stop
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleVMAction(vm.name, "restart")}
+                            onClick={() =>
+                              handleVMAction(vm.libvirt_name, "restart")
+                            }
                           >
                             Restart
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleVMAction(vm.name, "suspend")}
+                            onClick={() =>
+                              handleVMAction(vm.libvirt_name, "suspend")
+                            }
                           >
                             Suspend
                           </DropdownMenuItem>
                         </>
                       ) : vm.status === "suspended" ? (
                         <DropdownMenuItem
-                          onClick={() => handleVMAction(vm.name, "resume")}
+                          onClick={() =>
+                            handleVMAction(vm.libvirt_name, "resume")
+                          }
                         >
                           Resume
                         </DropdownMenuItem>
                       ) : (
                         <DropdownMenuItem
-                          onClick={() => handleVMAction(vm.name, "start")}
+                          onClick={() =>
+                            handleVMAction(vm.libvirt_name, "start")
+                          }
                         >
                           Start
                         </DropdownMenuItem>

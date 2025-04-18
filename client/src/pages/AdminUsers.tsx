@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/Layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { FiPlus, FiRefreshCw, FiUser } from "react-icons/fi";
+import { FiMoreVertical, FiPlus, FiRefreshCw, FiUser } from "react-icons/fi";
 import {
   Table,
   TableBody,
@@ -11,13 +11,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AddUserModal } from "@/components/User/AddUserModal";
-import userService from "@/services/userService";
+import userService, { User } from "@/services/userService";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { UserFormModal } from "@/components/User/UserFormModal";
 
 const AdminUsersPage: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const {
     data: users,
@@ -29,8 +37,17 @@ const AdminUsersPage: React.FC = () => {
     queryFn: userService.getUsers,
   });
 
-  const handleUserAdded = () => {
+  const handleUserAdded = () => refetch();
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUserUpdated = () => {
     refetch();
+    setSelectedUser(null);
+    setIsEditModalOpen(false);
   };
 
   return (
@@ -81,12 +98,13 @@ const AdminUsersPage: React.FC = () => {
                   <TableHead>Department</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Last Active</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       <div className="flex justify-center">
                         <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
                       </div>
@@ -132,11 +150,38 @@ const AdminUsersPage: React.FC = () => {
                           ? format(new Date(user.last_active), "MMM d, yyyy")
                           : "-"}
                       </TableCell>
+                      <TableCell>
+                        {user.role !== "admin" && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <FiMoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleEditUser(user)}
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={async () => {
+                                  await userService.deleteUser(user.id);
+                                  refetch();
+                                }}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       <FiUser className="h-8 w-8 mx-auto text-muted-foreground" />
                       <p className="text-muted-foreground mt-2">
                         No users found
@@ -150,10 +195,19 @@ const AdminUsersPage: React.FC = () => {
         )}
       </div>
 
-      <AddUserModal
+      <UserFormModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onUserAdded={handleUserAdded}
+        onSuccess={handleUserAdded}
+        mode="add"
+      />
+
+      <UserFormModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={handleUserUpdated}
+        mode="edit"
+        initialValues={selectedUser}
       />
     </DashboardLayout>
   );

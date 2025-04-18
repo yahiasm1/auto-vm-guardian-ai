@@ -15,7 +15,17 @@ export interface VM {
   user_id?: string;
   vm_type_id?: string; // New field for VM type
   created_at?: string;
-  updated_at?: string;
+  libvirt_name: string;
+  vm_type?: {
+    name: string;
+    os_type: string;
+    id: string | null;
+  };
+  user?: {
+    name: string;
+    email: string;
+    role: string;
+  };
 }
 
 export interface VMInfo extends VM {
@@ -129,7 +139,7 @@ export const vmService = {
       if (data.recentVms && Array.isArray(data.recentVms)) {
         data.recentVms = data.recentVms.map((vm: VM) => ({
           ...vm,
-          status: this.mapStateToStatus(vm.state),
+          status: mapStateToStatus(vm.state),
         }));
       }
 
@@ -180,7 +190,7 @@ export const vmService = {
       // Map the raw VM data to our standardized format for the frontend
       return response.data.vms.map((vm: VM) => ({
         ...vm,
-        status: this.mapStateToStatus(vm.state),
+        status: mapStateToStatus(vm.state),
       }));
     } catch (error) {
       // If it's a 304, return empty array since browser will use cached data
@@ -209,7 +219,7 @@ export const vmService = {
 
     return {
       ...vmInfo,
-      status: this.mapStateToStatus(vmInfo.state),
+      status: mapStateToStatus(vmInfo.state),
     };
   },
 
